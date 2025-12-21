@@ -1,0 +1,6 @@
+@BillingInvoicingPlatform.API_HostAddress = http://localhost:5293
+
+GET {{BillingInvoicingPlatform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

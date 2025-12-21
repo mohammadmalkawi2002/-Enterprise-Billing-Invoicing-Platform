@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BillingInvoicingPlatform.API/BillingInvoicingPlatform.API.csproj" />
+  <Project Path="BillingInvoicingPlatform.Application/BillingInvoicingPlatform.Application.csproj" />
+  <Project Path="BillingInvoicingPlatform.Domain/BillingInvoicingPlatform.Domain.csproj" />
+  <Project Path="BillingInvoicingPlatform.Infrastructure/BillingInvoicingPlatform.Infrastructure.csproj" />
+</Solution>
