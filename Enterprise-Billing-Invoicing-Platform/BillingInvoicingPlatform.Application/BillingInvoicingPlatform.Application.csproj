@@ -10,4 +10,13 @@
     <ProjectReference Include="..\BillingInvoicingPlatform.Domain\BillingInvoicingPlatform.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Service.Abstraction\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
+
 </Project>

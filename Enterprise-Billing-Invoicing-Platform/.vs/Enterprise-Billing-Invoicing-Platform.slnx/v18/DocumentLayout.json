@@ -1,7 +1,16 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\User\\source\\repos\\Enterprise-Billing-Invoicing-Platform\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\dto\\invoicedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\dto\\invoicedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\dto\\customerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\dto\\customerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 9,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,6 +51,32 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CustomerDto.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\CustomerDto.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Dto\\CustomerDto.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\CustomerDto.cs",
+              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Dto\\CustomerDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T08:57:30.295Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "InvoiceDto.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\InvoiceDto.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Dto\\InvoiceDto.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\InvoiceDto.cs",
+              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Dto\\InvoiceDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-24T08:40:46.802Z",
+              "EditorCaption": ""
             }
           ]
         }
