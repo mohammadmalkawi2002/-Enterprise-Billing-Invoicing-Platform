@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using BillingInvoicingPlatform.Application.Dto;
+using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Customer;
 using BillingInvoicingPlatform.Application.Exceptions;
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Domain.Entities;
@@ -22,6 +23,24 @@ namespace BillingInvoicingPlatform.Application.Service
             _mapper = mapper;
         }
 
+
+        public async Task<PagedResult<CustomerDto>> GetAllCustomer(CustomerQueryDto queryDto)
+        {
+            //queryDto.PageNumber= queryDto.PageNumber <= 0 ? 1 : queryDto.PageNumber;
+            //queryDto.PageSize= queryDto.PageSize <= 0 ? 10 : queryDto.PageSize;
+
+
+            var result = await _customerRepository.GetPagedAsync(queryDto);
+
+
+            return new PagedResult<CustomerDto>
+            {
+                Items = _mapper.Map<List<CustomerDto>>(result.Items),
+                TotalCount = result.TotalCount,
+                PageSize = result.PageSize,
+                PageNumber = result.PageNumber
+            };
+        }
 
         public async Task<CustomerDto> GetCustomerById(int id) 
         { 
@@ -50,7 +69,17 @@ namespace BillingInvoicingPlatform.Application.Service
         
         }
 
+        public async Task UpdateCustomer( UpdateCustomerDto updateCustomerDto) 
+        {
+            var customer= await _customerRepository.GetByIdAsync( updateCustomerDto.Id);
+            if (customer is null)
+                throw new NotFoundException($" customer with Id {updateCustomerDto.Id} NotFound");
 
+            customer.UpdatedAt=DateTime.UtcNow;
+            _mapper.Map(updateCustomerDto, customer);
+
+            await _customerRepository.UpdateAsync(customer);
+        }
 
         public async Task DeleteCustomerAsync(int customerId) 
         {

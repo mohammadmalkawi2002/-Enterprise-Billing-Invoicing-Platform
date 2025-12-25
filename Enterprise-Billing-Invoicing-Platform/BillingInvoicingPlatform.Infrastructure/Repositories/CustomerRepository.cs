@@ -1,4 +1,6 @@
-﻿using BillingInvoicingPlatform.Application.Interfaces;
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Customer;
+using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Domain.Entities;
 using BillingInvoicingPlatform.Domain.Enums;
 using BillingInvoicingPlatform.Infrastructure.Data;
@@ -19,6 +21,82 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
         { 
             _dbContext = dbContext;
         }
+
+        public async Task<PagedResult<Customer>> GetPagedAsync(CustomerQueryDto query)
+        {
+            var customers = _dbContext.Customers
+                                 .AsNoTracking()
+                                 .Where(c => c.Status != CustomerStatus.Deleted);
+
+            // Searching by Name or Email
+
+            if (!string.IsNullOrEmpty(query.SearchBy)) 
+            {
+                customers = customers.Where(c => 
+                                 c.Name.Contains(query.SearchBy) 
+                              || c.Email.Contains(query.SearchBy) );
+            
+            }
+
+            // Filtering by Status or 
+
+            if (!string.IsNullOrEmpty(query.Status)) 
+            { 
+                customers = customers.Where(c => c.Status.ToString() == query.Status);
+            }
+
+            // Sorting(default by Id):
+
+           customers=query.SortBy?.ToLower() switch
+            {
+                "name" => query.SortDirection?.ToLower() == "desc" 
+                ? customers.OrderByDescending(c => c.Name) 
+                : customers.OrderBy(c => c.Name),
+
+                "email" => query.SortDirection?.ToLower() == "desc" 
+                ? customers.OrderByDescending(c => c.Email) 
+                : customers.OrderBy(c => c.Email),
+
+                "createdAt" => query.SortDirection?.ToLower() == "desc" 
+                ? customers.OrderByDescending(c => c.CreatedAt) 
+                : customers.OrderBy(c => c.CreatedAt),
+
+                _ => customers.OrderBy(c => c.Id),
+            };
+
+            var totalCount = await customers.CountAsync();
+
+            // Pagination:
+
+            var items = await customers
+                         .Skip((query.PageNumber - 1) * query.PageSize)
+                          .Take(query.PageSize)
+                             .ToListAsync();
+
+
+            return new PagedResult<Customer> 
+            { 
+                 Items = items,
+                 TotalCount = totalCount,
+                 PageSize = query.PageSize,
+                 PageNumber = query.PageNumber
+
+            };
+
+        }
+
+
+        public async Task<Customer?> GetByIdAsync(int id)
+        {
+            return await _dbContext.Customers
+               .Include(c => c.Invoices)
+               .AsSplitQuery()
+               .FirstOrDefaultAsync(c => c.Id == id);
+
+        }
+
+
+
         public async Task<Customer> AddAsync(Customer customer)
         {
            await _dbContext.AddAsync(customer);
@@ -28,7 +106,22 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
         }
 
-      
+
+        public async Task UpdateAsync(Customer customer)
+        {
+            _dbContext.Customers.Update(customer);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task SoftDeleteAsync(Customer customer)
+        {
+            customer.Status = CustomerStatus.Deleted;
+
+            customer.DeletedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+        }
+
 
         public async Task<bool> ExistsByEmailAsync(string email)
         {
@@ -41,14 +134,13 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             return await _dbContext.Customers.AsNoTracking().Where(c=>c.Status== CustomerStatus.Active).ToListAsync();
         }
 
-        public async Task<Customer?> GetByIdAsync(int id)
+        public Task<Customer?> GetByEmailAsync(string email)
         {
-             return await _dbContext.Customers
-                .Include(c=>c.Invoices)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(c=>c.Id == id);
-                
+            throw new NotImplementedException();
         }
+
+
+    
 
         public async Task<bool> HasInvoicesAsync(int customerId)
         {
@@ -56,19 +148,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             return await _dbContext.Invoices.AnyAsync(i=>i.CustomerId == customerId && !i.IsDeleted);
         }
 
-        public async Task SoftDeleteAsync(Customer customer)
-        {
-          customer.Status=CustomerStatus.Deleted;
 
-            customer.DeletedAt = DateTime.UtcNow;
-
-            await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Customer customer)
-        {
-            _dbContext.Customers.Update(customer);
-           await _dbContext.SaveChangesAsync();
-        }
+       
     }
 }

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
-using BillingInvoicingPlatform.Application.Dto;
+using BillingInvoicingPlatform.Application.Dto.Customer;
 using BillingInvoicingPlatform.Domain.Entities;
+using BillingInvoicingPlatform.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,12 @@ namespace BillingInvoicingPlatform.Application.Mapping
             CreateMap<UpdateCustomerDto, Customer>();
 
             //Mapping From Entity To Dto:
-            CreateMap<Customer, CustomerDto>();
+            CreateMap<Customer, CustomerDto>()
+                .ForMember(dest => dest.InvoiceCount, opt => opt.MapFrom(src => src.Invoices.Count))
+             .ForMember(dest => dest.Status,
+               opt => opt.MapFrom(src => src.Status.ToString()));
+            // Address mapping
+            CreateMap<AddressDto, Address>().ReverseMap();
         }
     }
 }

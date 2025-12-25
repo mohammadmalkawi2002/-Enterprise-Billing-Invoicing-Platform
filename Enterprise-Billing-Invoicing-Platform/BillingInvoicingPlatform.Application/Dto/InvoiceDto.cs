@@ -1,4 +1,5 @@
-﻿using BillingInvoicingPlatform.Domain.Enums;
+﻿using BillingInvoicingPlatform.Application.Dto.Customer;
+using BillingInvoicingPlatform.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;

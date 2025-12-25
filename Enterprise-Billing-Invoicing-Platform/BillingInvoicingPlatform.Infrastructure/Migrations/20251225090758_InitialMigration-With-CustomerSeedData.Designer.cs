@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BillingInvoicingPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251223201812_Initial")]
-    partial class Initial
+    [Migration("20251225090758_InitialMigration-With-CustomerSeedData")]
+    partial class InitialMigrationWithCustomerSeedData
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

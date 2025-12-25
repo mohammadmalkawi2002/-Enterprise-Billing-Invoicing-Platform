@@ -1,4 +1,6 @@
-﻿using BillingInvoicingPlatform.Domain.Entities;
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Customer;
+using BillingInvoicingPlatform.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +11,11 @@ namespace BillingInvoicingPlatform.Application.Interfaces
 {
     public interface ICustomerRepository
     {
+
+        Task<PagedResult<Customer>> GetPagedAsync(CustomerQueryDto query);
         Task<Customer?> GetByIdAsync(int id);
+
+        Task<Customer?> GetByEmailAsync(string email);
          Task<Customer> AddAsync(Customer customer);
         Task UpdateAsync(Customer customer);
 
