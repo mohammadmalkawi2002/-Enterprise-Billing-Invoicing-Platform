@@ -3,16 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{B6E8DDFA-470F-CD04-60D9-0C18B26F461D}|BillingInvoicingPlatform.API\\BillingInvoicingPlatform.API.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.api\\controllers\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B6E8DDFA-470F-CD04-60D9-0C18B26F461D}|BillingInvoicingPlatform.API\\BillingInvoicingPlatform.API.csproj|solutionrelative:billinginvoicingplatform.api\\controllers\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\common\\pagination\\paginationrequestparameters.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\common\\pagination\\paginationrequestparameters.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\dto\\customer\\customerquerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\dto\\customer\\customerquerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\dto\\invoice\\invoicequerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\dto\\invoice\\invoicequerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,7 +14,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 10,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -58,41 +50,15 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PaginationRequestParameters.cs",
-              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Common\\Pagination\\PaginationRequestParameters.cs",
-              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Common\\Pagination\\PaginationRequestParameters.cs",
-              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Common\\Pagination\\PaginationRequestParameters.cs",
-              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Common\\Pagination\\PaginationRequestParameters.cs",
-              "ViewState": "AgIAAA4AAAAAAAAAAAAAwAoAAAAhAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-25T11:17:48.641Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "CustomerQueryDto.cs",
-              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Customer\\CustomerQueryDto.cs",
-              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Dto\\Customer\\CustomerQueryDto.cs",
-              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Customer\\CustomerQueryDto.cs",
-              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Dto\\Customer\\CustomerQueryDto.cs",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAABEAAAAWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-25T09:21:08.919Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "CustomersController.cs",
-              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.API\\Controllers\\CustomersController.cs",
-              "RelativeDocumentMoniker": "BillingInvoicingPlatform.API\\Controllers\\CustomersController.cs",
-              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.API\\Controllers\\CustomersController.cs",
-              "RelativeToolTip": "BillingInvoicingPlatform.API\\Controllers\\CustomersController.cs",
-              "ViewState": "AgIAABEAAAAAAAAAAAAcwB4AAAAMAAAAAAAAAA==",
+              "Title": "InvoiceQueryDto.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs*",
+              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-25T08:37:19.029Z",
+              "WhenOpened": "2026-01-06T08:47:37.226Z",
               "EditorCaption": ""
             }
           ]

@@ -27,6 +27,7 @@ namespace BillingInvoicingPlatform.Application.Interfaces
         /// Used for uniqueness validation in Application layer.
         /// </summary>
         Task<bool> ExistsByEmailAsync(string email);
+        Task<bool> ExistsAsync(int customerId);
 
         /// <summary>
         /// Checks if customer has any invoices.
@@ -39,6 +40,7 @@ namespace BillingInvoicingPlatform.Application.Interfaces
         /// Returns only active customers (Status = Active)
         /// </summary>
         Task<List<Customer>> GetActiveAsync();
+        Task<bool> IsCustomerActiveAsync(int customerId);
 
 
     }

@@ -34,7 +34,12 @@ namespace BillingInvoicingPlatform.Infrastructure.Data.Config
             builder.Ignore(ii => ii.LineTax);
 
 
-            builder.HasQueryFilter(ii => !ii.IsDeleted);
+
+            builder.Ignore(x => x.IsDeleted);  
+            builder.Ignore(x => x.DeletedAt);
+
+            builder.HasQueryFilter(x => !x.Invoice.IsDeleted);
+
 
 
         }

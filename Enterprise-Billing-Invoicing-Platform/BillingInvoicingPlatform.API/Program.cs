@@ -1,11 +1,13 @@
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Application.Mapping;
 using BillingInvoicingPlatform.Application.Service;
+using BillingInvoicingPlatform.Application.Service.Abstraction;
 using BillingInvoicingPlatform.Application.Validators;
 using BillingInvoicingPlatform.Infrastructure.Data;
 using BillingInvoicingPlatform.Infrastructure.Data.Seed;
 using BillingInvoicingPlatform.Infrastructure.Repositories;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -25,18 +27,22 @@ builder.Services.AddDbContext<ApplicationDbContext>(options=>options
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(CustomerProfile).Assembly);
 
+builder.Services.AddFluentValidationAutoValidation();
+
 
 // Register validators from assembly
-builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<InvoiceValidator>();
 
 
 // Register Repositories:
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
 
 //Register Services:
 
-builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IInvoiceService,InvoiceService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -50,7 +56,7 @@ var app = builder.Build();
 //{
 //    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 //    // Optional: apply migrations automatically
-//  //  dbContext.Database.Migrate();
+//    //  dbContext.Database.Migrate();
 
 //    await CustomerSeeder.SeedAsync(dbContext);
 //}

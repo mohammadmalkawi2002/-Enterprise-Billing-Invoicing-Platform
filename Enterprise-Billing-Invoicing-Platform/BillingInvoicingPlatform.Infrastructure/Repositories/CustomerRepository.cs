@@ -32,22 +32,22 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
             if (!string.IsNullOrEmpty(query.SearchBy)) 
             {
+                var search=query.SearchBy.Trim().ToLower();
                 customers = customers.Where(c => 
-                                 c.Name.Contains(query.SearchBy) 
-                              || c.Email.Contains(query.SearchBy) );
-            
+                               c.Name !=null &&  c.Name.ToLower().Contains(search)
+                              || c.Email !=null &&  c.Email.ToLower().Contains(search));
             }
 
             // Filtering by Status or 
-
-            if (!string.IsNullOrEmpty(query.Status)) 
-            { 
-                customers = customers.Where(c => c.Status.ToString() == query.Status);
+            if (!string.IsNullOrEmpty(query.Status) &&
+                Enum.TryParse<CustomerStatus>(query.Status, true, out var status))
+            {
+                customers = customers.Where(c => c.Status == status);
             }
 
             // Sorting(default by Id):
 
-           customers=query.SortBy?.ToLower() switch
+            customers =query.SortBy?.ToLower() switch
             {
                 "name" => query.SortDirection?.ToLower() == "desc" 
                 ? customers.OrderByDescending(c => c.Name) 
@@ -125,7 +125,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
         public async Task<bool> ExistsByEmailAsync(string email)
         {
-            var exists = await _dbContext.Customers.AnyAsync(c => c.Email == email);
+            var exists = await _dbContext.Customers.AnyAsync(c => c.Email == email );
            return exists  ;
         }
 
@@ -139,8 +139,13 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
+       public async Task<bool> IsCustomerActiveAsync(int customerId) 
+        { 
+            return await _dbContext.Customers
+                .AnyAsync(c => c.Id == customerId && c.Status == CustomerStatus.Active);
+        }
 
-    
+
 
         public async Task<bool> HasInvoicesAsync(int customerId)
         {
@@ -148,7 +153,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             return await _dbContext.Invoices.AnyAsync(i=>i.CustomerId == customerId && !i.IsDeleted);
         }
 
+        public Task<bool> ExistsAsync(int customerId)
+        {
+            return  _dbContext.Customers.AnyAsync(c => c.Id == customerId );
 
-       
+        }
     }
 }

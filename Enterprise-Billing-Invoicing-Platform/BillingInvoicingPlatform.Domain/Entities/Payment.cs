@@ -9,6 +9,7 @@ namespace BillingInvoicingPlatform.Domain.Entities
 {
     public class Payment:BaseEntity
     {
+      
         public int InvoiceId { get; set; }
         public Invoice Invoice { get; set; }
 

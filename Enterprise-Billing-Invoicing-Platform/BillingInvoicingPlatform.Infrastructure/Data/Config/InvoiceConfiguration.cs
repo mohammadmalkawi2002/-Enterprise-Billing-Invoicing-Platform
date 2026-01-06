@@ -23,12 +23,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Data.Config
              .IsRequired()
              .HasMaxLength(20);
 
-            builder.HasIndex(i => i.InvoiceNumber)
-               .IsUnique();
-
+           
             builder.Property(i => i.Status).HasConversion<int>();
-                
-             
+
+            builder.Property(i => i.Notes).HasMaxLength(300).IsRequired(false);
 
             builder.Property(i => i.IssueDate)
               .IsRequired();
@@ -45,8 +43,12 @@ namespace BillingInvoicingPlatform.Infrastructure.Data.Config
                    .HasPrecision(18, 2)
                    .IsRequired();
 
+            builder.Property(i => i.TotalAmount)
+                 .HasPrecision(18, 2)
+                 .IsRequired();
+
             // TotalAmount is calculated ==> not mapped
-            builder.Ignore(i => i.TotalAmount);
+            builder.Ignore(i => i.TotalPaid);
             builder.Ignore(i => i.RemainingBalance);
 
 
@@ -69,6 +71,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Data.Config
             //Query Filter(Soft Delete)
             builder.HasQueryFilter(i => !i.IsDeleted);
 
+            //indexes for performance optimization:
+            builder.HasIndex(i => i.InvoiceNumber)
+              .IsUnique();
+            builder.HasIndex(i => i.Status);
         }
     }
 }

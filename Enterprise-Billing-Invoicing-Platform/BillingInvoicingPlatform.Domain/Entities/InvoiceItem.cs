@@ -20,7 +20,7 @@ namespace BillingInvoicingPlatform.Domain.Entities
 
         public decimal LineTax => LineSubTotal * TaxRate / 100;
 
-        public decimal LineTotal => LineSubTotal + LineTax;
+        public decimal LineTotal => Math.Round(LineSubTotal+ LineTax, 2,MidpointRounding.AwayFromZero);
 
     }
 }

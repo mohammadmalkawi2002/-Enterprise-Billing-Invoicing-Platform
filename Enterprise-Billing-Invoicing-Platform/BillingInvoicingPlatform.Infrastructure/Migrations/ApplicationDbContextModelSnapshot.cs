@@ -98,6 +98,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -106,6 +110,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -118,6 +126,8 @@ namespace BillingInvoicingPlatform.Infrastructure.Migrations
 
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Invoices", (string)null);
                 });
@@ -133,9 +143,6 @@ namespace BillingInvoicingPlatform.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -143,9 +150,6 @@ namespace BillingInvoicingPlatform.Infrastructure.Migrations
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("Quantity")
                         .HasPrecision(18, 2)

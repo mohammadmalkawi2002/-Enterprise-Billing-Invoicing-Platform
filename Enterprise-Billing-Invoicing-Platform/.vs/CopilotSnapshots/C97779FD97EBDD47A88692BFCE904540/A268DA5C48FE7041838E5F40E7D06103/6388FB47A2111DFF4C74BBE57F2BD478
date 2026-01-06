@@ -1,0 +1,41 @@
+﻿using AutoMapper;
+using BillingInvoicingPlatform.Application.Dto;
+using BillingInvoicingPlatform.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace BillingInvoicingPlatform.Application.Mapping
+{
+    public class InvoiceProfile:Profile
+    {
+        public InvoiceProfile()
+        {
+            //from Dto To Entity:
+            CreateMap<CreateInvoiceDto, Invoice>()
+                .ForMember(dest => dest.Items, opt => opt.Ignore());
+
+            CreateMap<CreateInvoiceItemDto, InvoiceItem>();
+
+           CreateMap<UpdateInvoiceDto, Invoice>()
+                .ForMember(dest => dest.Items,opt=>opt.Ignore());
+
+            CreateMap<UpdateInvoiceItemDto, InvoiceItem>();
+
+            //from Entity To Dto:
+            CreateMap<Invoice, InvoiceDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.TotalPaid, opt => opt.MapFrom(src => src.Payments.Sum(p => p.PaymentAmount)))
+                .ForMember(dest => dest.RemainingAmount, opt => opt.MapFrom(src => src.RemainingBalance));
+           
+
+
+            CreateMap<InvoiceItem, InvoiceItemDto>()
+    .ForMember(d => d.LineSubTotal, o => o.MapFrom(s => s.LineSubTotal))
+    .ForMember(d => d.LineTax, o => o.MapFrom(s => s.LineTax))
+    .ForMember(d => d.LineTotal, o => o.MapFrom(s => s.LineTotal));
+        }
+    }
+}

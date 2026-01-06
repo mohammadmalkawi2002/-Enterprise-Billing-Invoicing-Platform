@@ -1,5 +1,6 @@
 ﻿using BillingInvoicingPlatform.Application.Dto.Customer;
 using BillingInvoicingPlatform.Application.Service;
+using BillingInvoicingPlatform.Application.Service.Abstraction;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -12,15 +13,13 @@ namespace BillingInvoicingPlatform.API.Controllers
     [ApiController]
     public class CustomersController : ControllerBase
     {
-        private readonly CustomerService _customerService;
-        private readonly IValidator<CreateCustomerDto> _createValidator;
-        private readonly IValidator<UpdateCustomerDto> _updateValidator;
+        private readonly ICustomerService _customerService;
+    
 
-        public CustomersController(CustomerService customerService,IValidator<CreateCustomerDto> createValidator, IValidator<UpdateCustomerDto> updateValidator)
+        public CustomersController(ICustomerService customerService)
         {
             _customerService = customerService;
-            _createValidator = createValidator;
-            _updateValidator = updateValidator;
+           
         }
 
 
@@ -60,19 +59,7 @@ namespace BillingInvoicingPlatform.API.Controllers
         [HttpPost]
         public async Task<ActionResult<CustomerDto>> Create(CreateCustomerDto customerDto)
         {
-           var validationResult = await _createValidator.ValidateAsync(customerDto);
-            if (!validationResult.IsValid)
-               {
-
-                var errorResponse = validationResult.Errors.Select(e => new
-               {
-                    PropertyName = e.PropertyName,
-                    Error = e.ErrorMessage,
-                    ErrorCode = e.ErrorCode,
-                    attemptedValue = e.AttemptedValue
-                });
-                return BadRequest(new { Errors = errorResponse });
-            }
+           
 
             var createdCustomer = await _customerService.CreateCustomer(customerDto);
             return CreatedAtAction(nameof(GetById), new { id = createdCustomer.Id }, createdCustomer);
@@ -86,18 +73,7 @@ namespace BillingInvoicingPlatform.API.Controllers
             if (id != dto.Id)
                 return BadRequest();
 
-            var validationResult = await _updateValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                var errorResponse = validationResult.Errors.Select(e => new
-                {
-                    PropertyName = e.PropertyName,
-                    Error = e.ErrorMessage,
-                    ErrorCode = e.ErrorCode,
-                    attemptedValue = e.AttemptedValue
-                });
-                return BadRequest(new { Errors = errorResponse });
-            }
+            
 
             await _customerService.UpdateCustomer(dto);
             return NoContent();
