@@ -27,8 +27,7 @@ namespace BillingInvoicingPlatform.Application.Service
 
         public async Task<PagedResult<CustomerDto>> GetAllCustomer(CustomerQueryDto queryDto)
         {
-            //queryDto.PageNumber= queryDto.PageNumber <= 0 ? 1 : queryDto.PageNumber;
-            //queryDto.PageSize= queryDto.PageSize <= 0 ? 10 : queryDto.PageSize;
+            
 
 
             var result = await _customerRepository.GetPagedAsync(queryDto);

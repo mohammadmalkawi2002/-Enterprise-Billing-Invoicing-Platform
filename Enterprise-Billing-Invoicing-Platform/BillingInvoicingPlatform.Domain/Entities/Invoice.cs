@@ -35,11 +35,25 @@ namespace BillingInvoicingPlatform.Domain.Entities
         private readonly List<Payment> _payments = new();
 
         public ICollection<Payment> Payments => _payments;
-        public decimal TotalPaid => Payments.Sum(p => p.PaymentAmount);
-        public decimal RemainingBalance => TotalAmount - TotalPaid;
+        public decimal TotalPaid =>
+    Math.Round(Payments.Sum(p => p.PaymentAmount), 2);
+        public decimal RemainingBalance =>
+        Math.Max(0, Math.Round(TotalAmount - TotalPaid, 2));
 
-        public int DaysOverdue => Status == InvoiceStatus.Overdue
-             ? (DateTime.UtcNow.Date - DueDate.Value.Date).Days
-             : 0;
+        public int DaysOverdue
+        {
+            get
+            {
+                
+
+                if (Status == InvoiceStatus.Draft ||
+                    Status == InvoiceStatus.Paid ||
+                    Status == InvoiceStatus.Cancelled)
+                    return 0;
+
+                var days = (DateTime.UtcNow.Date - DueDate.Value.Date).Days;
+                return days > 0 ? days : 0;
+            }
+        }
     }
 }

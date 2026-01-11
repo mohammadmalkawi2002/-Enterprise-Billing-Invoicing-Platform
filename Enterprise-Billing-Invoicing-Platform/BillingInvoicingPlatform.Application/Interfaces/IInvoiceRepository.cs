@@ -1,4 +1,5 @@
-﻿using BillingInvoicingPlatform.Application.Dto.Invoice;
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Invoice;
 using BillingInvoicingPlatform.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ namespace BillingInvoicingPlatform.Application.Interfaces
 {
     public interface IInvoiceRepository
     {
+        Task<PagedResult<InvoiceDtoPagination>> GetPagedAsync(InvoiceQueryDto query);
         Task<Invoice> AddAsync(Invoice invoice);
        
         Task UpdateAsync(Invoice invoice);
@@ -17,10 +19,10 @@ namespace BillingInvoicingPlatform.Application.Interfaces
         Task<string?> GetLastInvoiceNumber();
         Task<InvoiceDto?> GetInvoiceDetailsAsync(int invoiceId);
         Task<Invoice?> GetByIdAsync(int id);
-       
-
-
+        Task<List<Invoice>> GetOverdueInvoicesAsync();
         Task<bool> InvoiceExistsAsync(int invoiceId);
+
+        Task SaveChangesAsync();
 
        // later added:
         //    Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber);

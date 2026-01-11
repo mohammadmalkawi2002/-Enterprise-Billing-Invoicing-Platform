@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using BillingInvoicingPlatform.Application.Dto.Invoice;
+using System.Text.Json;
 
 namespace BillingInvoicingPlatform.API.Controllers
 {
@@ -20,6 +21,29 @@ namespace BillingInvoicingPlatform.API.Controllers
         { 
             _invoiceService = invoiceService;
            
+        }
+
+
+
+        [HttpGet]
+        [Route("")]
+        public async Task<ActionResult<IEnumerable<InvoiceDtoPagination>>> GetAllInvoices([FromQuery] InvoiceQueryDto queryDto)
+        {
+            var pagedResult = await _invoiceService.GetAllInvoicesAsync(queryDto);
+            var metaData = new 
+            {
+                pagedResult.TotalPages,
+                pagedResult.TotalCount,
+                pagedResult.PageSize,
+                pagedResult.PageNumber,
+                pagedResult.HasPrevious,
+                pagedResult.HasNext
+
+            };
+
+            Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(metaData));
+
+            return Ok(pagedResult.Items);
         }
 
 

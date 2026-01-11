@@ -3,8 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\dto\\invoice\\invoicequerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\dto\\invoice\\invoicequerydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{B6E8DDFA-470F-CD04-60D9-0C18B26F461D}|BillingInvoicingPlatform.API\\BillingInvoicingPlatform.API.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B6E8DDFA-470F-CD04-60D9-0C18B26F461D}|BillingInvoicingPlatform.API\\BillingInvoicingPlatform.API.csproj|solutionrelative:billinginvoicingplatform.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FB304860-6A4A-067A-C301-B62989698D8F}|BillingInvoicingPlatform.Infrastructure\\BillingInvoicingPlatform.Infrastructure.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.infrastructure\\backgroundjobs\\invoiceoverduejob.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FB304860-6A4A-067A-C301-B62989698D8F}|BillingInvoicingPlatform.Infrastructure\\BillingInvoicingPlatform.Infrastructure.csproj|solutionrelative:billinginvoicingplatform.infrastructure\\backgroundjobs\\invoiceoverduejob.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|c:\\users\\user\\onedrive\\desktop\\-enterprise-billing-invoicing-platform\\enterprise-billing-invoicing-platform\\billinginvoicingplatform.application\\service\\invoiceoverdueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B0526FE0-FCBF-E5D9-3875-0F38E8969412}|BillingInvoicingPlatform.Application\\BillingInvoicingPlatform.Application.csproj|solutionrelative:billinginvoicingplatform.application\\service\\invoiceoverdueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 9,
           "Children": [
             {
               "$type": "Bookmark",
@@ -50,15 +58,41 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "InvoiceQueryDto.cs",
-              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs",
-              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs",
-              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs*",
-              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Dto\\Invoice\\InvoiceQueryDto.cs*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAFAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "InvoiceOverdueJob.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Infrastructure\\BackgroundJobs\\InvoiceOverdueJob.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Infrastructure\\BackgroundJobs\\InvoiceOverdueJob.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Infrastructure\\BackgroundJobs\\InvoiceOverdueJob.cs",
+              "RelativeToolTip": "BillingInvoicingPlatform.Infrastructure\\BackgroundJobs\\InvoiceOverdueJob.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAlwBoAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-06T08:47:37.226Z",
+              "WhenOpened": "2026-01-11T09:29:20.312Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.API\\Program.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.API\\Program.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.API\\Program.cs",
+              "RelativeToolTip": "BillingInvoicingPlatform.API\\Program.cs",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAYwGMAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-11T09:24:04.792Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "InvoiceOverdueService.cs",
+              "DocumentMoniker": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Service\\InvoiceOverdueService.cs",
+              "RelativeDocumentMoniker": "BillingInvoicingPlatform.Application\\Service\\InvoiceOverdueService.cs",
+              "ToolTip": "C:\\Users\\User\\OneDrive\\Desktop\\-Enterprise-Billing-Invoicing-Platform\\Enterprise-Billing-Invoicing-Platform\\BillingInvoicingPlatform.Application\\Service\\InvoiceOverdueService.cs",
+              "RelativeToolTip": "BillingInvoicingPlatform.Application\\Service\\InvoiceOverdueService.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAQwCEAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-11T09:08:30.045Z",
               "EditorCaption": ""
             }
           ]

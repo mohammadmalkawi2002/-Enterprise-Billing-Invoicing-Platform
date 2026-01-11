@@ -34,6 +34,10 @@ namespace BillingInvoicingPlatform.Infrastructure.Data.Config
 
             // Soft delete query filter
             builder.HasQueryFilter(p => !p.IsDeleted);
+
+            //Add index for performance:
+            builder.HasIndex(p => p.PaymentDate);
+
         }
     }
 }

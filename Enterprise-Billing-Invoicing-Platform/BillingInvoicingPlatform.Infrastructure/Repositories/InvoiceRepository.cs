@@ -1,7 +1,9 @@
-﻿using BillingInvoicingPlatform.Application.Dto.Invoice;
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Invoice;
 using BillingInvoicingPlatform.Application.Dto.Payment;
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Domain.Entities;
+using BillingInvoicingPlatform.Domain.Enums;
 using BillingInvoicingPlatform.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -23,6 +25,107 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
         }
 
 
+
+        public async Task<PagedResult<InvoiceDtoPagination>> GetPagedAsync(InvoiceQueryDto query)
+        {
+            var invoicesQuery = _dbContext
+                             .Invoices
+                             .AsNoTracking()
+                             .AsQueryable();
+
+
+            // 1️]Apply Filter BY Status :
+            if (!string.IsNullOrWhiteSpace(query.Status)) 
+            {
+                // Try to parse the status string to the InvoiceStatus enum
+                if (Enum.TryParse<InvoiceStatus>(query.Status,  ignoreCase:true, out var statusEnum))
+                {
+                    invoicesQuery = invoicesQuery.Where(i => i.Status == statusEnum);
+                }
+
+                else
+                {
+                    // Invalid status provided, return empty result
+                    return new PagedResult<InvoiceDtoPagination>
+                    {
+                        Items = new List<InvoiceDtoPagination>(),
+                        TotalCount = 0,
+                        PageSize = query.PageSize,
+                        PageNumber = query.PageNumber
+                         
+                    };
+                }
+            }
+
+            // Apply filtering(By status), sorting(CreatedAt(asc or desc),InvoiceNumber(asc)) Searching(dynamic ), and pagination based on the query
+
+            //2] Apply Searching:
+
+            if (!string.IsNullOrWhiteSpace(query.SearchBy))
+            {
+                var searchTerm = query.SearchBy.Trim().ToLower();
+                invoicesQuery = invoicesQuery.Where(i =>
+                    i.InvoiceNumber.ToLower().Contains(searchTerm) ||
+                    i.Customer.Name.ToLower().Contains(searchTerm) ||
+                    i.Status.ToString().ToLower().Contains(searchTerm)
+                );
+            }
+
+
+            //3] Get TOTAL COUNT (before pagination)
+            var totalCount = await invoicesQuery.CountAsync();
+
+            //4] Apply Sorting:
+            invoicesQuery = ApplySorting(invoicesQuery, query.SortBy, query.SortDirection);
+
+
+            //5]Apply PAGINATION +Project only needed fields
+            var items = await invoicesQuery
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(i => new InvoiceDtoPagination
+                {
+                    IssueDate = i.IssueDate ?? default(DateTime),
+                    InvoiceNumber = i.InvoiceNumber,
+                    CustomerName = i.Customer.Name,
+                     CustomerEmail = i.Customer.Email,
+                     Status = i.Status.ToString(),
+                    DueDate = i.DueDate,
+                    TotalAmount = i.TotalAmount,
+                    RemainingAmount = i.RemainingBalance,
+                  
+                })
+                .ToListAsync();
+
+            return new PagedResult<InvoiceDtoPagination>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageSize = query.PageSize,
+                PageNumber = query.PageNumber 
+                 
+            };
+        }
+
+        private IQueryable <Invoice> ApplySorting(IQueryable<Invoice> query, string? sortBy, string? sortDirection)
+        {
+            var isDescending = sortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true;
+
+            return (sortBy?.ToLower()) switch
+            {
+                "invoicenumber" => isDescending
+                    ? query.OrderByDescending(i => i.InvoiceNumber)
+                    : query.OrderBy(i => i.InvoiceNumber),
+
+                "createdat" => isDescending
+                     ? query.OrderByDescending(i => i.CreatedAt)
+                     : query.OrderBy(i => i.CreatedAt),
+
+
+                //Default :CreatedAt (DESC):
+                _ => query.OrderByDescending(i => i.CreatedAt)
+            };
+        }
 
         public async Task<InvoiceDto?> GetInvoiceDetailsAsync(int invoiceId)
         {
@@ -68,7 +171,6 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
                 })
                 .FirstOrDefaultAsync();
-            //TODO: Try use Automapper in Repository later 
         }
 
      
@@ -135,7 +237,23 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
         }
 
+        public async Task<List<Invoice>> GetOverdueInvoicesAsync()
+        {
+            var currentDate=DateTime.UtcNow.Date;
 
-       
+              return await _dbContext.Invoices
+                         .Include(i => i.Payments)
+                        .Where(i => i.DueDate.HasValue
+                         && i.DueDate.Value.Date < currentDate
+                         && (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
+                         && !i.IsDeleted)
+                            .ToListAsync();
+        
+    }
+
+        public async Task SaveChangesAsync()
+        {
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

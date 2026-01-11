@@ -71,6 +71,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             var items = await customers
                          .Skip((query.PageNumber - 1) * query.PageSize)
                           .Take(query.PageSize)
+       
                              .ToListAsync();
 
 

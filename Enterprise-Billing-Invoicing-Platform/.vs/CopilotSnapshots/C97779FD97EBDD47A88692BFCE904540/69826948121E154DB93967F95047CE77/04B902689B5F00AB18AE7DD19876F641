@@ -157,6 +157,7 @@ namespace BillingInvoicingPlatform.Application.Service
                 throw new BusinessException(
                   $"Cannot delete invoice {invoice.InvoiceNumber}. Paid invoices cannot be deleted.");
             //4] Check invoice status():
+            //TODO: Decide if only draft invoices can be deleted
             if (invoice.Status != InvoiceStatus.Draft)
                 throw new BusinessException(
                     $"Cannot delete invoice {invoice.InvoiceNumber}.only draft invoices can be deleted.");
@@ -286,7 +287,23 @@ namespace BillingInvoicingPlatform.Application.Service
 
        
 
-        
-        
+        //TODO:CheckAndUpdateOverdueInvoices(System Check (Daily)==>BackgroundService)
+
+        public async Task CheckAndUpdateOverdueInvoicesAsync()
+        {
+            //1] Get OVERDUE Invoices from Db:
+
+            var overDueInvoices=await _invoiceRepository.GetOverdueInvoicesAsync();
+
+
+            //Foreach invoice update Status To OverDue 
+
+            foreach (var invoice in overDueInvoices)
+            {
+                invoice.Status = InvoiceStatus.Overdue;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _invoiceRepository.UpdateAsync(invoice);
+            }
+        }
     }
 }

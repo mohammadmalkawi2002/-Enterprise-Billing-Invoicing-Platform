@@ -33,7 +33,16 @@ namespace BillingInvoicingPlatform.Application.Mapping
                 .ForMember(dest => dest.RemainingAmount, opt => opt.MapFrom(src => src.RemainingBalance))
                 .ForMember(dest=>dest.DaysOverdue,opt=>opt.MapFrom(src=>src.DaysOverdue));
 
-           
+
+            CreateMap<Invoice, InvoiceDtoPagination>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.RemainingAmount, opt => opt.MapFrom(src => src.RemainingBalance));
+               
+               
+                
+
+
+
 
 
             CreateMap<InvoiceItem, InvoiceItemDto>()

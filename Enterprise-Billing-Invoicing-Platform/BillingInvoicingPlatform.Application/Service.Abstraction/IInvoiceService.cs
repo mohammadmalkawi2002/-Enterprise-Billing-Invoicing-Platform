@@ -1,4 +1,5 @@
-﻿using BillingInvoicingPlatform.Application.Dto.Invoice;
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Invoice;
 using BillingInvoicingPlatform.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -10,10 +11,12 @@ namespace BillingInvoicingPlatform.Application.Service.Abstraction
 {
     public interface IInvoiceService
     {
+
+        Task<PagedResult<InvoiceDtoPagination>> GetAllInvoicesAsync(InvoiceQueryDto query);
         Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto);
         Task UpdateAsync(int invoiceId, UpdateInvoiceDto dto);
         Task DeleteInvoice(int invoiceId);
-     
+       
         Task<InvoiceDto> GetInvoiceWithDetailsAsync(int invoiceId);
 
         /// <summary>

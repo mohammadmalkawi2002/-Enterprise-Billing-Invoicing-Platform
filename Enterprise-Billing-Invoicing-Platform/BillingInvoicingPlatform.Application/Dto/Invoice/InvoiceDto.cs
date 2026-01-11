@@ -80,7 +80,7 @@ namespace BillingInvoicingPlatform.Application.Dto.Invoice
         public string? InvoiceNumber { get; set; }
         public int CustomerId { get; set; }
         public string CustomerName { get; set; } = string.Empty;
-
+        public string CustomerEmail { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
 
         public DateTime IssueDate { get; set; }
@@ -99,7 +99,24 @@ namespace BillingInvoicingPlatform.Application.Dto.Invoice
     }
 
 
-    
+
+    public class InvoiceDtoPagination
+    {
+        public string? InvoiceNumber { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerEmail { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+
+        public DateTime IssueDate { get; set; }
+        public DateTime? DueDate { get; set; }
+
+        public decimal TotalAmount { get; set; }
+        public decimal RemainingAmount { get; set; }
+
+        public List<InvoiceItemDto> Items { get; set; } = new();
+        public List<PaymentDto> Payments { get; set; } = new();
+    }
+
     public class InvoiceItemDto
     {
         public int Id { get; set; }
