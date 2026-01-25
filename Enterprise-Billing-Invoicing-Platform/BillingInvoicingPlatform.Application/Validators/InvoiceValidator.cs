@@ -157,19 +157,19 @@ namespace BillingInvoicingPlatform.Application.Validators
         }
     }
 
-    public class ChangeInvoiceStatusValidator : AbstractValidator<ChangeStatusRequest>
-    {
-        public ChangeInvoiceStatusValidator()
-        {
-            RuleFor(x => x.Status)
-                .NotEmpty()
-                .Must(status => status == InvoiceStatus.Sent || status == InvoiceStatus.Cancelled)
-                .WithMessage("Invalid invoice status.Only 'Sent' and 'Cancelled' statuses are allowed.");
+    //public class ChangeInvoiceStatusValidator : AbstractValidator<ChangeStatusRequest>
+    //{
+    //    public ChangeInvoiceStatusValidator()
+    //    {
+    //        RuleFor(x => x.Status)
+    //            .NotEmpty()
+    //            .Must(status => status == InvoiceStatus.Sent || status == InvoiceStatus.Cancelled)
+    //            .WithMessage("Invalid invoice status.Only 'Sent' and 'Cancelled' statuses are allowed.");
                 
 
 
-        }
-    }
+    //    }
+    //}
 
 
 }

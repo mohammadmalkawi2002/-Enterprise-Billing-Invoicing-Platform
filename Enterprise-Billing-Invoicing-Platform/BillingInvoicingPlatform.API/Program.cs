@@ -1,12 +1,16 @@
+using BillingInvoicingPlatform.API.CustomMiddleware;
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Application.Mapping;
 using BillingInvoicingPlatform.Application.Service;
 using BillingInvoicingPlatform.Application.Service.Abstraction;
 using BillingInvoicingPlatform.Application.Validators;
 using BillingInvoicingPlatform.Infrastructure.BackgroundJobs;
+using BillingInvoicingPlatform.Infrastructure.Configuration;
 using BillingInvoicingPlatform.Infrastructure.Data;
 using BillingInvoicingPlatform.Infrastructure.Data.Seed;
+using BillingInvoicingPlatform.Infrastructure.ExternalService;
 using BillingInvoicingPlatform.Infrastructure.Repositories;
+using BillingInvoicingPlatform.Infrastructure.UnitOfWork;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Hangfire;
@@ -35,6 +39,9 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options=>options
 .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Configure MailSettings from appsettings.json
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+
 
 //Add auto-mapper configuration:
 
@@ -50,13 +57,21 @@ builder.Services.AddValidatorsFromAssemblyContaining<InvoiceValidator>();
 // Register Repositories:
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddTransient<InvoiceOverdueJob>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IInvoiceEmailJob, InvoiceEmailJob>();
+
 
 
 //Register Services:
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IInvoiceService,InvoiceService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<IInvoiceOverdueService, InvoiceOverdueService>();
 
 
@@ -77,12 +92,17 @@ var app = builder.Build();
 //    await CustomerSeeder.SeedAsync(dbContext);
 //}
 
+
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//Use Custom Exception Middleware:
+app.UseMiddleware<ExceptionMiddleWare>();
 
 app.UseHttpsRedirection();
 

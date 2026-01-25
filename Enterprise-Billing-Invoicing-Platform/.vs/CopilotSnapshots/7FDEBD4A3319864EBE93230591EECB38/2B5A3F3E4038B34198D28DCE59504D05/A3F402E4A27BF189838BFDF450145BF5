@@ -1,0 +1,22 @@
+﻿using BillingInvoicingPlatform.Application.Interfaces;
+using Hangfire;
+
+namespace BillingInvoicingPlatform.Infrastructure.Services
+{
+    /// <summary>
+    /// Infrastructure implementation of background job service using Hangfire
+    /// This is where Hangfire dependency lives (Infrastructure layer only)
+    /// </summary>
+    public class HangfireBackgroundJobService : IBackgroundJobService
+    {
+        /// <summary>
+        /// Enqueues a fire-and-forget job to send invoice email
+        /// </summary>
+        public void EnqueueInvoiceEmail(int invoiceId)
+        {
+            BackgroundJob.Enqueue<IInvoiceEmailJob>(
+                job => job.SendInvoiceEmailAsync(invoiceId)
+            );
+        }
+    }
+}

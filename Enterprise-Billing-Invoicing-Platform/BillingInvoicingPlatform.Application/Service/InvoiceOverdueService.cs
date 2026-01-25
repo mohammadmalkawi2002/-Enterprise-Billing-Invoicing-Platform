@@ -41,13 +41,14 @@ namespace BillingInvoicingPlatform.Application.Service
 
                 try
                 {
+                    //TODO:Check redundant condition
 
-                    if (invoice.Status == InvoiceStatus.Paid)
-                        continue;
+                    // 1] if (invoice.Status == InvoiceStatus.Paid)
+                    //    continue;
 
-                    //Not overDue:
-                    if (invoice.DaysOverdue <= 0)
-                        continue;
+                    ////Not overDue:
+                    //2] if (invoice.DaysOverdue <= 0)
+                    //    continue;
 
                     //Rule:Sent=> Overdue:
                     if (invoice.Status == InvoiceStatus.Sent)

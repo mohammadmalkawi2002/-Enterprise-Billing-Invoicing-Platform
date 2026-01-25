@@ -5,6 +5,7 @@ using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Domain.Entities;
 using BillingInvoicingPlatform.Domain.Enums;
 using BillingInvoicingPlatform.Infrastructure.Data;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -26,41 +27,35 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
 
 
 
+        /// <summary>
+        /// Get paginated invoices with optimal performance using direct projection
+        /// </summary>
         public async Task<PagedResult<InvoiceDtoPagination>> GetPagedAsync(InvoiceQueryDto query)
         {
-            var invoicesQuery = _dbContext
-                             .Invoices
-                             .AsNoTracking()
-                             .AsQueryable();
+            var invoicesQuery = _dbContext.Invoices
+                .AsNoTracking()  
+                .AsQueryable();
 
-
-            // 1️]Apply Filter BY Status :
+            // 1️] Apply Filter BY Status
             if (!string.IsNullOrWhiteSpace(query.Status)) 
             {
-                // Try to parse the status string to the InvoiceStatus enum
-                if (Enum.TryParse<InvoiceStatus>(query.Status,  ignoreCase:true, out var statusEnum))
+                if (Enum.TryParse<InvoiceStatus>(query.Status, ignoreCase: true, out var statusEnum))
                 {
                     invoicesQuery = invoicesQuery.Where(i => i.Status == statusEnum);
                 }
-
                 else
                 {
-                    // Invalid status provided, return empty result
                     return new PagedResult<InvoiceDtoPagination>
                     {
                         Items = new List<InvoiceDtoPagination>(),
                         TotalCount = 0,
                         PageSize = query.PageSize,
                         PageNumber = query.PageNumber
-                         
                     };
                 }
             }
 
-            // Apply filtering(By status), sorting(CreatedAt(asc or desc),InvoiceNumber(asc)) Searching(dynamic ), and pagination based on the query
-
-            //2] Apply Searching:
-
+            // 2] Apply Searching
             if (!string.IsNullOrWhiteSpace(query.SearchBy))
             {
                 var searchTerm = query.SearchBy.Trim().ToLower();
@@ -71,15 +66,13 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                 );
             }
 
-
-            //3] Get TOTAL COUNT (before pagination)
+            // 3] Get TOTAL COUNT (before pagination) - efficient COUNT query
             var totalCount = await invoicesQuery.CountAsync();
 
-            //4] Apply Sorting:
+            // 4] Apply Sorting
             invoicesQuery = ApplySorting(invoicesQuery, query.SortBy, query.SortDirection);
 
-
-            //5]Apply PAGINATION +Project only needed fields
+            // 5]  OPTIMIZED: Project directly to DTO with SQL  calculations
             var items = await invoicesQuery
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
@@ -88,12 +81,12 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                     IssueDate = i.IssueDate ?? default(DateTime),
                     InvoiceNumber = i.InvoiceNumber,
                     CustomerName = i.Customer.Name,
-                     CustomerEmail = i.Customer.Email,
-                     Status = i.Status.ToString(),
+                    CustomerEmail = i.Customer.Email,
+                    Status = i.Status.ToString(),
                     DueDate = i.DueDate,
                     TotalAmount = i.TotalAmount,
-                    RemainingAmount = i.RemainingBalance,
-                  
+                    // ✅ Calculate RemainingBalance in SQL (not in memory!)
+                    RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount)
                 })
                 .ToListAsync();
 
@@ -103,7 +96,6 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                 TotalCount = totalCount,
                 PageSize = query.PageSize,
                 PageNumber = query.PageNumber 
-                 
             };
         }
 
@@ -127,19 +119,20 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             };
         }
 
+        /// <summary>
+        /// Get invoice details with optimal performance using direct projection
+        /// </summary>
         public async Task<InvoiceDto?> GetInvoiceDetailsAsync(int invoiceId)
         {
-
-
-
-            return await _dbContext.Invoices.AsNoTracking()
+            return await _dbContext.Invoices
+                .AsNoTracking()  
                 .Where(i => i.Id == invoiceId)
                 .Select(i => new InvoiceDto
                 {
-
                     InvoiceNumber = i.InvoiceNumber,
                     CustomerId = i.CustomerId,
                     CustomerName = i.Customer.Name,
+                    CustomerEmail = i.Customer.Email,
                     IssueDate = i.IssueDate ?? default(DateTime),
                     DueDate = i.DueDate,
                     CreatedAt = i.CreatedAt ?? default(DateTime),
@@ -147,10 +140,19 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                     SubTotal = i.SubTotal,
                     TaxAmount = i.TaxAmount,
                     TotalAmount = i.TotalAmount,
-                    TotalPaid = i.TotalPaid,
-                    RemainingAmount = i.RemainingBalance,
-                    DaysOverdue = i.DaysOverdue,
+                    
+                    // ✅ Calculate TotalPaid in SQL (not in memory!)
+                    TotalPaid = i.Payments.Sum(p => p.PaymentAmount),
+                    
+                    // ✅ Calculate RemainingBalance in SQL
+                    RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount),
+                    
+                    // ✅ Calculate DaysOverdue in SQL
+                    DaysOverdue = i.DueDate.HasValue && i.DueDate.Value.Date < DateTime.UtcNow.Date
+                        ? EF.Functions.DateDiffDay(i.DueDate.Value.Date, DateTime.UtcNow.Date)
+                        : 0,
 
+                    // ✅ Project Items directly (no separate query needed)
                     Items = i.Items.Select(item => new InvoiceItemDto
                     {
                         Id = item.Id,
@@ -160,15 +162,18 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                         TaxRate = item.TaxRate,
                         LineTotal = item.LineTotal
                     }).ToList(),
+                    
+                    // ✅ Project Payments directly (no separate query needed)
                     Payments = i.Payments.Select(payment => new PaymentDto
                     {
-                        Amount = payment.PaymentAmount,
+                        Id = payment.Id,
+                        PaymentAmount = payment.PaymentAmount,
                         PaymentDate = payment.PaymentDate,
                         PaymentMethod = payment.PaymentMethod.ToString(),
                         ReferenceNumber = payment.ReferenceNumber,
-                        Notes = payment.Note,
+                        Note = payment.Note,
+                       
                     }).ToList()
-
                 })
                 .FirstOrDefaultAsync();
         }
