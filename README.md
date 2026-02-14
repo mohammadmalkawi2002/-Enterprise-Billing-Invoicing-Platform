@@ -117,7 +117,7 @@ Optimized queries using projection to DTOs
 
 ▶️ Getting Started
 1️⃣ Clone Repository
-git clone https://github.com/your-username/your-project.git
+git clone https:https://github.com/mohammadmalkawi2002/-Enterprise-Billing-Invoicing-Platform
 cd your-project
 
 2️⃣ Configure Database
