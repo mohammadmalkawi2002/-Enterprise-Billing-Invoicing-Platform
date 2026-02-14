@@ -168,7 +168,7 @@ Clean code & maintainability practices
 Mohammad Malkawi
 Backend .NET Developer
 
-LinkedIn: (add link)
+LinkedIn: (https://www.linkedin.com/in/mohammad-malkawi-461b08287/)
 
 Email: mohammadmalkawi681@gmail.com
 
