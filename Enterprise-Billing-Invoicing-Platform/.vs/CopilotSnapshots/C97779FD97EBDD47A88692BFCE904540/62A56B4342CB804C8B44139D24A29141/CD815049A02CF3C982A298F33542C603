@@ -1,0 +1,289 @@
+﻿using AutoMapper;
+using BillingInvoicingPlatform.Application.Dto;
+using BillingInvoicingPlatform.Application.Exceptions;
+using BillingInvoicingPlatform.Application.Interfaces;
+using BillingInvoicingPlatform.Application.Service.Abstraction;
+using BillingInvoicingPlatform.Domain.Entities;
+using BillingInvoicingPlatform.Domain.Enums;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+
+namespace BillingInvoicingPlatform.Application.Service
+{
+    public class InvoiceService : IInvoiceService
+    {
+        private readonly IInvoiceRepository _invoiceRepository;
+        private readonly ICustomerRepository _customerRepository;
+        private readonly IMapper _mapper;
+
+        public InvoiceService(IInvoiceRepository invoiceRepository,ICustomerRepository customerRepository
+            ,IMapper mapper)
+        {
+            _invoiceRepository = invoiceRepository;
+            _customerRepository = customerRepository;
+            _mapper = mapper;
+        }
+
+
+        public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto)
+        {
+
+            //customer exist check(Load Customer):
+            var Customer = await _customerRepository.GetByIdAsync(dto.CustomerId);
+            if (Customer is null)
+                throw new NotFoundException("Customer not found.");
+            // 2 Check customer is active
+
+            if (!Customer.Status.Equals(CustomerStatus.Active) )
+                throw new BusinessException("Cannot create invoice. Customer is inactive.");
+
+
+            //Generate InvoiceNumber:
+            var invoiceNumber = await GenerateInvoiceNumberAsync();
+
+            //Mapping From Dto + create invoice(without items):
+            var invoice = _mapper.Map<Invoice>(dto);
+            invoice.InvoiceNumber = invoiceNumber;
+
+            invoice.CreatedAt = DateTime.UtcNow;
+
+            ///  Add Invoice Items
+                
+            foreach(var itemDto in dto.Items)
+            {
+                var item = _mapper.Map<InvoiceItem>(itemDto);
+                item.CreatedAt = DateTime.UtcNow;
+                invoice.Items.Add(item);
+
+            }
+
+            // Calculate Totals 
+            invoice.SubTotal=invoice.Items.Sum(ii=>ii.LineSubTotal);
+            invoice.TaxAmount= invoice.Items.Sum(ii=>ii.LineTax);
+            invoice.TotalAmount= invoice.SubTotal + invoice.TaxAmount;
+
+
+            //Call the Repo to add the invoice to  db(Save):
+
+            var created =  await _invoiceRepository.AddAsync(invoice);
+
+            return _mapper.Map<InvoiceDto>(created);
+
+        }
+
+
+        public async Task UpdateAsync(int invoiceId, UpdateInvoiceDto dto)
+        {
+            // 1️] Load Invoice
+            var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+            if (invoice is null)
+                throw new NotFoundException("Invoice not found.");
+
+            // 2️] Business Rule: Only Draft invoice can updated
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new BusinessException(
+                    $"Cannot update invoice. Status is {invoice.Status}. Only Draft invoices can be updated."
+                );
+
+            // 3️] Update invoice main properties (without items)
+            _mapper.Map(dto, invoice);
+            invoice.UpdatedAt = DateTime.UtcNow;
+
+                 invoice.Items.Clear();
+            // 4️] Update Invoice Items
+           
+            foreach (var itemDto in dto.Items)
+            {
+                var item = _mapper.Map<InvoiceItem>(itemDto);
+                item.CreatedAt = DateTime.UtcNow;
+                invoice.Items.Add(item);
+            }
+
+
+            // 5️] Recalculate Totals
+            invoice.SubTotal = invoice.Items.Sum(i => i.LineSubTotal);
+            invoice.TaxAmount = invoice.Items.Sum(i => i.LineTax);
+            invoice.TotalAmount = invoice.SubTotal + invoice.TaxAmount;
+            await _invoiceRepository.UpdateAsync(invoice);
+        }
+
+        public async Task DeleteInvoice(int invoiceId)
+        {
+            //1]Load invoice:
+            var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+            if (invoice is null)
+                throw new NotFoundException("Invoice not found.");
+
+            //2]  Check if invoice has payments(Cannot delete invoice with payments):
+
+            if (invoice.Payments.Any())
+                throw new BusinessException(
+                    $"Cannot delete invoice {invoice.InvoiceNumber}. Invoice has {invoice.Payments.Count} recorded payment(s).");
+
+            //3] Rule: Cannot delete paid invoice
+            if (invoice.Status == InvoiceStatus.Paid)
+                throw new BusinessException(
+                  $"Cannot delete invoice {invoice.InvoiceNumber}. Paid invoices cannot be deleted.");
+            //4] Check invoice status():
+            //TODO: Decide if only draft invoices can be deleted
+            //if (invoice.Status != InvoiceStatus.Draft)
+            //    throw new BusinessException(
+            //        $"Cannot delete invoice {invoice.InvoiceNumber}.only draft invoices can be deleted.");
+
+
+
+            await _invoiceRepository.SoftDeleteAsync(invoice);
+        }
+
+        public async Task<InvoiceDto> ChangeInvoiceStatusAsync(int id, InvoiceStatus newStatus)
+        {
+            //1] Load invoice with Relations:
+            var invoice = await _invoiceRepository.GetByIdAsync(id);
+            if (invoice is null)
+                throw new NotFoundException($"Invoice with ID {id} not found");
+
+
+            if (newStatus == InvoiceStatus.Sent && invoice.Status == InvoiceStatus.Draft)
+            {
+                if (!invoice.Items.Any())
+                    throw new BusinessException(
+           "Cannot send invoice. Invoice must have at least one item.");
+
+            }
+
+            //Rule: Cannot Manually Set Status to "Paid":
+
+            if (newStatus == InvoiceStatus.Paid)
+                throw new BusinessException(
+        "Cannot manually mark invoice as Paid. Please record a payment instead.");
+
+
+            // Cancellation Rules
+            if (newStatus == InvoiceStatus.Cancelled)
+            {
+                if (invoice.Status == InvoiceStatus.Paid || invoice.Status == InvoiceStatus.PartiallyPaid)
+                    throw new BusinessException("Cannot cancel paid or partially paid invoice. Create a credit note instead.");
+
+                if (invoice.Payments.Any())
+                    throw new BusinessException("Cannot cancel invoice with recorded payments.");
+            }
+
+            //3] Update Status:
+            invoice.Status = newStatus;
+            invoice.UpdatedAt = DateTime.UtcNow;
+
+            await _invoiceRepository.UpdateAsync(invoice);
+
+            return _mapper.Map<InvoiceDto>(invoice);
+        }
+     
+
+        public async Task<InvoiceDto> GetInvoiceWithDetailsAsync(int invoiceId)
+        {
+            var invoiceWithDetails = await _invoiceRepository.GetInvoiceDetailsAsync(invoiceId);
+            if (invoiceWithDetails is null)
+                throw new NotFoundException("Invoice not found");
+            return _mapper.Map<InvoiceDto>(invoiceWithDetails);
+        }
+
+        /// <summary>
+        /// Sends an invoice from Draft status to Sent status.
+        /// Validates that invoice has at least one item and is in Draft status.
+        /// </summary>
+        /// <param name="invoiceId">The unique identifier of the invoice to send</param>
+        /// <returns>Updated invoice DTO with Sent status</returns>
+        public async Task<InvoiceDto> SendInvoiceAsync(int invoiceId)
+        {
+            // 1] Load invoice
+            var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+            if (invoice is null)
+                throw new NotFoundException($"Invoice with ID {invoiceId} not found");
+
+            // 2] Business Rule: Only Draft invoices can be sent
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new BusinessException(
+                    $"Cannot send invoice. Status is {invoice.Status}. Only Draft invoices can be sent."
+                );
+
+            // 3] Validation: Invoice must have at least one item
+            if (!invoice.Items.Any())
+                throw new BusinessException(
+                    "Cannot send invoice. Invoice must have at least one item."
+                );
+
+            // 4] Update Status to Sent
+            invoice.Status = InvoiceStatus.Sent;
+            invoice.UpdatedAt = DateTime.UtcNow;
+
+            // 5] Persist changes
+            await _invoiceRepository.UpdateAsync(invoice);
+
+            return _mapper.Map<InvoiceDto>(invoice);
+        }
+
+        /// <summary>
+        /// Cancels an invoice.
+        /// Validates that invoice is not Paid/PartiallyPaid and has no recorded payments.
+        /// </summary>
+        /// <param name="invoiceId">The unique identifier of the invoice to cancel</param>
+        /// <returns>Updated invoice DTO with Cancelled status</returns>
+        public async Task<InvoiceDto> CancelInvoiceAsync(int invoiceId)
+        {
+            // 1] Load invoice
+            var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+            if (invoice is null)
+                throw new NotFoundException($"Invoice with ID {invoiceId} not found");
+
+            // 2] Business Rule: Cannot cancel Paid or PartiallyPaid invoices
+            if (invoice.Status == InvoiceStatus.Paid || invoice.Status == InvoiceStatus.PartiallyPaid)
+                throw new BusinessException(
+                    "Cannot cancel paid or partially paid invoice. Create a credit note instead."
+                );
+
+            // 3] Business Rule: Cannot cancel invoices with recorded payments
+            if (invoice.Payments.Any())
+                throw new BusinessException(
+                    "Cannot cancel invoice with recorded payments."
+                );
+
+            // 4] Update Status to Cancelled
+            invoice.Status = InvoiceStatus.Cancelled;
+            invoice.UpdatedAt = DateTime.UtcNow;
+
+            // 5] Persist changes
+            await _invoiceRepository.UpdateAsync(invoice);
+
+            return _mapper.Map<InvoiceDto>(invoice);
+        }
+        
+        private async Task<string> GenerateInvoiceNumberAsync()
+        {
+
+            var lastInvoiceNumber = await _invoiceRepository.GetLastInvoiceNumber();
+
+            int nextNumber = 1;
+
+            // Extract the numeric part from the last invoice number
+            if (!string.IsNullOrEmpty(lastInvoiceNumber))
+            {
+                var parts = lastInvoiceNumber.Split('-');//{"INV","2025","00012"}
+
+                nextNumber = int.Parse(parts[^1]) + 1;// 00012
+            }
+
+            var invoiceNumber = $"INV-{DateTime.UtcNow.Year}-{nextNumber:D5}";
+            return invoiceNumber;
+        }
+
+
+       
+        
+
+
+
+    }
+}

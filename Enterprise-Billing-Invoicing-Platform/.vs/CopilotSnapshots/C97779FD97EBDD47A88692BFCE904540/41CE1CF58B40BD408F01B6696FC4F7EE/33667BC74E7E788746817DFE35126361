@@ -1,0 +1,96 @@
+﻿using BillingInvoicingPlatform.Application.Dto;
+using BillingInvoicingPlatform.Application.Service.Abstraction;
+using BillingInvoicingPlatform.Application.Exceptions;
+using BillingInvoicingPlatform.Domain.Enums;
+using FluentValidation;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+
+namespace BillingInvoicingPlatform.API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class InvoicesController : ControllerBase
+    {
+        private readonly IInvoiceService _invoiceService;
+       
+
+        public InvoicesController(IInvoiceService invoiceService)
+        { 
+            _invoiceService = invoiceService;
+           
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult<InvoiceDto>> CreateInvoice([FromBody] CreateInvoiceDto dto)
+        {
+
+            var invoice = await _invoiceService.CreateAsync(dto);
+            return CreatedAtAction(nameof(CreateInvoice), new { }, invoice);
+
+        }
+
+
+
+        [HttpPut]
+        [Route("{invoiceId}")]
+        public async Task<IActionResult> UpdateInvoice(int invoiceId, [FromBody] UpdateInvoiceDto dto)
+        {
+            await _invoiceService.UpdateAsync(invoiceId, dto);
+            return NoContent();
+        }
+
+
+     
+
+        [HttpPatch("{invoiceId}/status")]
+        public async Task<ActionResult<InvoiceDto>> ChangeStatus(
+           int invoiceId,
+           [FromBody] ChangeStatusRequest request)
+        {
+            if (request is null)
+                return BadRequest(new { message = "Request body is required." });
+
+            try
+            {
+                // Service handles routing to SendInvoiceAsync or CancelInvoiceAsync
+                var invoice = await _invoiceService.ChangeInvoiceStatusAsync(invoiceId, request.Status);
+                return Ok(invoice);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Route("{invoiceId}/WithDetails")]
+        public async Task<ActionResult<InvoiceDto>> GetInvoiceWithDetails(int invoiceId)
+        {
+            var invoice = await _invoiceService.GetInvoiceWithDetailsAsync(invoiceId);
+            if (invoice is null)
+                return NotFound();
+            return Ok(invoice);
+        }
+
+       
+
+        [HttpDelete]
+        [Route("{invoiceId}")]
+        public async Task<IActionResult> Delete(int invoiceId) 
+        {
+            await _invoiceService.DeleteInvoice(invoiceId);
+            return NoContent();
+        }
+    }
+}

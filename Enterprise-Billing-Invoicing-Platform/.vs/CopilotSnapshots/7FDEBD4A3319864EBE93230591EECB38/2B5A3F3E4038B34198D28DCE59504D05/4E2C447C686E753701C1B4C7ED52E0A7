@@ -1,0 +1,16 @@
+﻿using System.Threading.Tasks;
+
+namespace BillingInvoicingPlatform.Application.Interfaces
+{
+    /// <summary>
+    /// Abstraction for background job enqueueing
+    /// Allows Application layer to enqueue jobs without knowing about Hangfire
+    /// </summary>
+    public interface IBackgroundJobService
+    {
+        /// <summary>
+        /// Enqueues a job to send invoice email
+        /// </summary>
+        void EnqueueInvoiceEmail(int invoiceId);
+    }
+}

@@ -1,0 +1,262 @@
+﻿using BillingInvoicingPlatform.Application.Common.Pagination;
+using BillingInvoicingPlatform.Application.Dto.Invoice;
+using BillingInvoicingPlatform.Application.Dto.Payment;
+using BillingInvoicingPlatform.Application.Interfaces;
+using BillingInvoicingPlatform.Domain.Entities;
+using BillingInvoicingPlatform.Domain.Enums;
+using BillingInvoicingPlatform.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace BillingInvoicingPlatform.Infrastructure.Repositories
+{
+    public class InvoiceRepository : IInvoiceRepository
+    {
+        private readonly ApplicationDbContext _dbContext;
+   
+        public InvoiceRepository(ApplicationDbContext dbContext)
+        {
+            _dbContext = dbContext;
+            
+        }
+
+
+
+        /// <summary>
+        /// Get paginated invoices with optimal performance using direct projection
+        /// </summary>
+        public async Task<PagedResult<InvoiceDtoPagination>> GetPagedAsync(InvoiceQueryDto query)
+        {
+            var invoicesQuery = _dbContext.Invoices
+                .AsNoTracking()  // ✅ Read-only, no change tracking overhead
+                .AsQueryable();
+
+            // 1️] Apply Filter BY Status
+            if (!string.IsNullOrWhiteSpace(query.Status)) 
+            {
+                if (Enum.TryParse<InvoiceStatus>(query.Status, ignoreCase: true, out var statusEnum))
+                {
+                    invoicesQuery = invoicesQuery.Where(i => i.Status == statusEnum);
+                }
+                else
+                {
+                    return new PagedResult<InvoiceDtoPagination>
+                    {
+                        Items = new List<InvoiceDtoPagination>(),
+                        TotalCount = 0,
+                        PageSize = query.PageSize,
+                        PageNumber = query.PageNumber
+                    };
+                }
+            }
+
+            // 2] Apply Searching
+            if (!string.IsNullOrWhiteSpace(query.SearchBy))
+            {
+                var searchTerm = query.SearchBy.Trim().ToLower();
+                invoicesQuery = invoicesQuery.Where(i =>
+                    i.InvoiceNumber.ToLower().Contains(searchTerm) ||
+                    i.Customer.Name.ToLower().Contains(searchTerm) ||
+                    i.Status.ToString().ToLower().Contains(searchTerm)
+                );
+            }
+
+            // 3] Get TOTAL COUNT (before pagination) - efficient COUNT query
+            var totalCount = await invoicesQuery.CountAsync();
+
+            // 4] Apply Sorting
+            invoicesQuery = ApplySorting(invoicesQuery, query.SortBy, query.SortDirection);
+
+            // 5] ✅ OPTIMIZED: Project directly to DTO with SQL-side calculations
+            var items = await invoicesQuery
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(i => new InvoiceDtoPagination
+                {
+                    IssueDate = i.IssueDate ?? default(DateTime),
+                    InvoiceNumber = i.InvoiceNumber,
+                    CustomerName = i.Customer.Name,
+                    CustomerEmail = i.Customer.Email,
+                    Status = i.Status.ToString(),
+                    DueDate = i.DueDate,
+                    TotalAmount = i.TotalAmount,
+                    // ✅ Calculate RemainingBalance in SQL (not in memory!)
+                    RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount)
+                })
+                .ToListAsync();
+
+            return new PagedResult<InvoiceDtoPagination>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageSize = query.PageSize,
+                PageNumber = query.PageNumber 
+            };
+        }
+
+        private IQueryable <Invoice> ApplySorting(IQueryable<Invoice> query, string? sortBy, string? sortDirection)
+        {
+            var isDescending = sortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true;
+
+            return (sortBy?.ToLower()) switch
+            {
+                "invoicenumber" => isDescending
+                    ? query.OrderByDescending(i => i.InvoiceNumber)
+                    : query.OrderBy(i => i.InvoiceNumber),
+
+                "createdat" => isDescending
+                     ? query.OrderByDescending(i => i.CreatedAt)
+                     : query.OrderBy(i => i.CreatedAt),
+
+
+                //Default :CreatedAt (DESC):
+                _ => query.OrderByDescending(i => i.CreatedAt)
+            };
+        }
+
+        /// <summary>
+        /// Get invoice details with optimal performance using direct projection
+        /// </summary>
+        public async Task<InvoiceDto?> GetInvoiceDetailsAsync(int invoiceId)
+        {
+            return await _dbContext.Invoices
+                .AsNoTracking()  // ✅ Read-only, no tracking
+                .Where(i => i.Id == invoiceId)
+                .Select(i => new InvoiceDto
+                {
+                    InvoiceNumber = i.InvoiceNumber,
+                    CustomerId = i.CustomerId,
+                    CustomerName = i.Customer.Name,
+                    CustomerEmail = i.Customer.Email,
+                    IssueDate = i.IssueDate ?? default(DateTime),
+                    DueDate = i.DueDate,
+                    CreatedAt = i.CreatedAt ?? default(DateTime),
+                    Status = i.Status.ToString(),
+                    SubTotal = i.SubTotal,
+                    TaxAmount = i.TaxAmount,
+                    TotalAmount = i.TotalAmount,
+                    
+                    // ✅ Calculate TotalPaid in SQL (not in memory!)
+                    TotalPaid = i.Payments.Sum(p => p.PaymentAmount),
+                    
+                    // ✅ Calculate RemainingBalance in SQL
+                    RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount),
+                    
+                    // ✅ Calculate DaysOverdue in SQL
+                    DaysOverdue = i.DueDate.HasValue && i.DueDate.Value.Date < DateTime.UtcNow.Date
+                        ? EF.Functions.DateDiffDay(i.DueDate.Value.Date, DateTime.UtcNow.Date)
+                        : 0,
+
+                    // ✅ Project Items directly (no separate query needed)
+                    Items = i.Items.Select(item => new InvoiceItemDto
+                    {
+                        Id = item.Id,
+                        Description = item.Description,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TaxRate = item.TaxRate,
+                        LineTotal = item.LineTotal
+                    }).ToList(),
+                    
+                    // ✅ Project Payments directly (no separate query needed)
+                    Payments = i.Payments.Select(payment => new PaymentDto
+                    {
+                        Id = payment.Id,
+                        PaymentAmount = payment.PaymentAmount,
+                        PaymentDate = payment.PaymentDate,
+                        PaymentMethod = payment.PaymentMethod.ToString(),
+                        ReferenceNumber = payment.ReferenceNumber,
+                        Note = payment.Note
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+        }
+
+     
+
+
+        public async Task<Invoice?> GetByIdAsync(int id) 
+        {
+           
+            return await _dbContext.Invoices    
+                    .Include(i => i.Customer)
+                    .Include(i => i.Items)
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i=> i.Id == id);
+                 
+
+        }
+
+     
+        public async Task<Invoice> AddAsync(Invoice invoice)
+        {
+           await _dbContext.Invoices.AddAsync(invoice);
+           await  _dbContext.SaveChangesAsync();
+              return invoice;
+        }
+
+        public async Task UpdateAsync(Invoice invoice)
+        { 
+            _dbContext.Invoices.Update(invoice);
+
+          await  _dbContext.SaveChangesAsync();
+        }
+
+
+
+        public async Task SoftDeleteAsync(Invoice invoice)
+        {
+            invoice.IsDeleted = true;
+            invoice.DeletedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+        }
+        public async Task<bool> InvoiceExistsAsync(int invoiceId)
+        {
+            return await _dbContext.Invoices
+                .AsNoTracking()
+                .AnyAsync(i => i.Id == invoiceId);
+        }
+
+
+
+        /// <summary>
+        /// Get the last invoice number for the current year from the database ex
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the invoice number of the latest
+        /// invoice for the current year, or null if no invoices exist for the current year.</returns>
+        public async Task<string?> GetLastInvoiceNumber()
+        {
+
+            return await _dbContext.Invoices
+                .Where(i => i.CreatedAt.Value.Year == DateTime.UtcNow.Year)
+                .OrderByDescending(i => i.Id)
+                .Select(i => i.InvoiceNumber)
+                .FirstOrDefaultAsync();
+
+
+        }
+
+        public async Task<List<Invoice>> GetOverdueInvoicesAsync()
+        {
+            var currentDate=DateTime.UtcNow.Date;
+
+              return await _dbContext.Invoices
+                         .Include(i => i.Payments)
+                        .Where(i => i.DueDate.HasValue
+                         && i.DueDate.Value.Date < currentDate
+                         && (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
+                         && !i.IsDeleted)
+                            .ToListAsync();
+        
+    }
+
+        public async Task SaveChangesAsync()
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+    }
+}
