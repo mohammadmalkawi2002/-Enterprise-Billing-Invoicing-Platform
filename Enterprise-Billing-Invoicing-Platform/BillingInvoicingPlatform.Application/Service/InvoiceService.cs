@@ -14,7 +14,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
- 
+
+using Microsoft.Extensions.Logging;
+
 
 namespace BillingInvoicingPlatform.Application.Service
 {
@@ -24,12 +26,14 @@ namespace BillingInvoicingPlatform.Application.Service
         private readonly ICustomerRepository _customerRepository;
         private readonly IMapper _mapper;
 
+        private ILogger<InvoiceService> _logger;
         public InvoiceService(IInvoiceRepository invoiceRepository,ICustomerRepository customerRepository
-            ,IMapper mapper)
+            ,IMapper mapper, ILogger<InvoiceService> logger)
         {
             _invoiceRepository = invoiceRepository;
             _customerRepository = customerRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
 
@@ -41,20 +45,29 @@ namespace BillingInvoicingPlatform.Application.Service
            if(!query.IsValidSortDirection())
                throw new BusinessException($"Invalid SortDirection field. Allowed: asc, desc");
 
-            //2] Call repository with validated query
+
+
+          
+        
+
+            //2] Call repository with validated query(Not in cache so go to db)
 
             var pagedInvoices =  await _invoiceRepository.GetPagedAsync(query);
-          
+
+
+
+
+
 
             //4] Return paged result
 
             return new PagedResult<InvoiceDtoPagination>
             {
-                      Items= _mapper.Map<List<InvoiceDtoPagination>>(pagedInvoices.Items),
-                      TotalCount=pagedInvoices.TotalCount,
-                      PageNumber=pagedInvoices.PageNumber,
-                       PageSize=pagedInvoices.PageSize
-                     
+                Items = _mapper.Map<List<InvoiceDtoPagination>>(pagedInvoices.Items),
+                TotalCount = pagedInvoices.TotalCount,
+                PageNumber = pagedInvoices.PageNumber,
+                PageSize = pagedInvoices.PageSize
+
             };
 
         }
@@ -198,6 +211,8 @@ namespace BillingInvoicingPlatform.Application.Service
             return _mapper.Map<InvoiceDto>(invoiceWithDetails);
         }
 
+
+
         /// <summary>
         ///change  invoice status from Draft  to Sent status.
         /// Validates that invoice has at least one item and is in Draft status.
@@ -231,13 +246,16 @@ namespace BillingInvoicingPlatform.Application.Service
             await _invoiceRepository.UpdateAsync(invoice);
 
             // 6] ENQUEUE BACKGROUND JOB TO SEND EMAIL
-            // This executes asynchronously - API returns immediately
+           
             BackgroundJob.Enqueue<IInvoiceEmailJob>(
                 job => job.SendInvoiceEmailJobAsync(invoiceId)
             );
 
             return _mapper.Map<InvoiceDto>(invoice);
         }
+
+
+
 
         /// <summary>
         /// Cancels an invoice.

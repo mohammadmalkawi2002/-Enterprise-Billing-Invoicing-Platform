@@ -33,7 +33,7 @@ namespace BillingInvoicingPlatform.Application.Service
             _logger = logger;
         }
 
-        //TODO:Add Refund Method:
+      
         public async Task DeletePaymentAsync(int paymentId)
         {
             //1] Load Payment with invoice from DB
@@ -73,7 +73,7 @@ namespace BillingInvoicingPlatform.Application.Service
             catch (Exception ex) 
             { 
                 await _unitOfWork.RollbackAsync();
-                throw;
+                throw ex;
             }
 
         }
@@ -94,7 +94,7 @@ namespace BillingInvoicingPlatform.Application.Service
                     (
                   $"Payment amount ({dto.PaymentAmount:C2}) exceeds remaining balance ({invoice.RemainingBalance:C2})"
                    );
-
+            
             // 4] Check Payment Date Warning
             if (dto.PaymentDate < invoice.IssueDate)
             {
@@ -117,8 +117,7 @@ namespace BillingInvoicingPlatform.Application.Service
 
                 //8]  RELOAD Invoice with Payments to recalculate totals
                 invoice = await _invoiceRepository.GetByIdAsync(dto.InvoiceId);
-                if (invoice is null)
-                    throw new NotFoundException();
+               
 
                 //9] Determine New Invoice Status (now with updated payments)
                 invoice.Status = DetermineInvoiceStatus(invoice);

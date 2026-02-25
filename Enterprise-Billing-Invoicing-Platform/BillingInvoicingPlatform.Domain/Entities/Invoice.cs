@@ -10,7 +10,7 @@ namespace BillingInvoicingPlatform.Domain.Entities
     public class Invoice:BaseEntity
     {
        
-        public string? InvoiceNumber { get; set; } //auto-generated in business 
+        public string? InvoiceNumber { get; set; } 
          public int CustomerId { get; set; }
         public Customer Customer { get; set; }
         public DateTime? IssueDate { get; set; }=DateTime.UtcNow;

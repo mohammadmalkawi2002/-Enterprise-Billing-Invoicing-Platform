@@ -233,7 +233,7 @@ namespace BillingInvoicingPlatform.Infrastructure.ExternalService
 
             }
 
-            catch(Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError(ex,
                         "❌ Failed to send email to {Email} for invoice {InvoiceNumber}. Error: {Error}",
@@ -243,7 +243,7 @@ namespace BillingInvoicingPlatform.Infrastructure.ExternalService
                     );
                 throw;
             }
-            
+
         }
     }
 }

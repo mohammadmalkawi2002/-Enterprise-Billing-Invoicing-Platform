@@ -1,0 +1,343 @@
+﻿using BillingInvoicingPlatform.Application.Dto.Account;
+using BillingInvoicingPlatform.Application.Exceptions;
+using BillingInvoicingPlatform.Application.Interfaces;
+using BillingInvoicingPlatform.Infrastructure.Identity.Configuration;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace BillingInvoicingPlatform.Infrastructure.Identity.Service
+{
+
+   
+
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly Jwt _jwtOptions;
+
+        public AuthService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IOptions<Jwt> jwtOptions)
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _jwtOptions = jwtOptions.Value;
+        }
+
+
+     
+
+        #region Create JWT
+        private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user)
+        {
+            //1] Get user claims and roles:
+            var userClaims=await _userManager.GetClaimsAsync(user);
+            var userRoles=await _userManager.GetRolesAsync(user);
+
+            var roleClaims = new List<Claim>();
+
+            foreach(var role in userRoles)
+            {
+                roleClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+
+            //2] Create your  standard claims:
+            var claims = new[]
+            {
+            new Claim(JwtRegisteredClaimNames.Sub,user.Id),
+            new Claim(JwtRegisteredClaimNames.Name,user.UserName??string.Empty),
+            new Claim(JwtRegisteredClaimNames.Iss,_jwtOptions.Issuer),
+            new Claim(JwtRegisteredClaimNames.Email,user.Email??string.Empty),
+            new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Exp,_jwtOptions.ExpiryMinutes.ToString()),
+          
+            // Add custom claims for user ID, first name, and last name:
+                new Claim("uid",user.Id),
+                new Claim("firstName", user.FirstName??string.Empty)
+            }
+                .Union(userClaims)
+                 .Union(roleClaims);
+
+
+            //3] Create signing credentials:
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+
+
+            // 4] Create JWT token
+
+            var token = new JwtSecurityToken(issuer:_jwtOptions.Issuer,
+                audience:_jwtOptions.Audience,
+                claims:claims,
+                expires:DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
+                signingCredentials:credentials);
+
+            return token;
+        }
+       
+               
+
+
+
+        #endregion
+
+
+        #region SignUp Method
+        public async Task<AuthResponse> RegisterAsync(RegisterDto dto)
+        {
+            //1] Check if user already exists
+
+            if(await _userManager.FindByEmailAsync(dto.Email) is not null)
+            {
+                return new AuthResponse
+                {
+                    Message = "Email is already registered.",
+                    IsAuthenticated = false
+                };
+            }
+
+
+            if(await _userManager.FindByNameAsync(dto.UserName) is not null)
+            {
+                return new AuthResponse
+                {
+                    Message = "Username is already taken.",
+                    IsAuthenticated = false
+                };
+            }
+
+            //2] Map RegisterDto to ApplicationUser:
+
+            var user = new ApplicationUser
+            { 
+                   FirstName = dto.FirstName,
+                  LastName= dto.LastName,
+                  Email=dto.Email,
+                  UserName= dto.UserName,
+                   CreatedAt= DateTime.UtcNow,
+                   IsActive= true,
+                   NormalizedEmail= dto.Email,
+                  NormalizedUserName= dto.UserName.ToUpper(),
+
+            };
+
+            var result=await _userManager.CreateAsync(user,dto.Password);
+
+            //3] If user creation failed, return errors:
+
+            if(!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e =>new {e.Code,e.Description}));
+                return new AuthResponse
+                {
+                    Message = $"User creation failed: {errors}",
+                    IsAuthenticated = false
+                };
+            }
+
+
+            //4] Optionally assign default role to new user (e.g., "User"):
+
+            await _userManager.AddToRoleAsync(user,Roles.User.ToString());
+
+            
+            //6] Generate JWT token for the newly registered user:
+            var jwtToken = await CreateJwtToken(user);
+            var roles=await _userManager.GetRolesAsync(user);
+
+            return new AuthResponse 
+            { 
+                Message= "User registered successfully.",
+                  UserName=user.UserName,
+                  Email=user.Email,
+                 IsAuthenticated=true,
+                 Token= new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                  ExpiresOn=DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
+                   Roles=roles.ToList()
+
+            };
+
+               
+
+        }
+        #endregion
+
+
+
+
+        #region Login Method
+        public async Task<AuthResponse> LoginAsync(LoginDto dto)
+        {
+            //1] Find user by email or username:
+            var user = await _userManager.FindByEmailAsync(dto.Identifier)?? await _userManager.FindByNameAsync(dto.Identifier);
+
+
+            if(user is null ||! await _userManager.CheckPasswordAsync(user,dto.Password))
+            {
+                return new AuthResponse
+                {
+                    Message = "Invalid email or password.",
+                    IsAuthenticated = false
+                };
+            }
+
+
+            //2] Optional: Check if user is active 
+
+            if(!user.IsActive)
+            {
+                return new AuthResponse
+                {
+                    IsAuthenticated = false,
+                    Message = "User account is deactivated"
+                };
+            }    
+
+            //3] Generate JWT token for the user:
+            var jwtToken = await CreateJwtToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new AuthResponse
+            {
+                Message = "Login successful.",
+                UserName = user.UserName,
+                Email = user.Email,
+                IsAuthenticated = true,
+                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                ExpiresOn = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
+                Roles = roles.ToList()
+            };
+
+
+        }
+        #endregion
+
+
+
+        #region User Management Methods
+
+        public async Task<bool> DeleteUserAsync(string userId)
+        {
+            var user=  await _userManager.FindByIdAsync(userId);
+            if(user is null)
+             return false;
+
+
+            var result = await _userManager.DeleteAsync(user);
+
+
+            return result.Succeeded;
+
+        }
+        
+
+            
+        public async Task<List<UserDto>> GetAllUsersAsync()
+        {
+
+            var users = await _userManager.Users.ToListAsync();
+            var usersDto = new List<UserDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+
+                usersDto.Add(new UserDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email ?? string.Empty,
+                    UserName = user.UserName,
+                    Role = roles.FirstOrDefault() ?? string.Empty,
+                    IsActive = user.IsActive,
+                    CreatedAt = user.CreatedAt
+                });
+
+            }
+
+            return usersDto;
+        }
+
+        public async Task<UserDto?> GetUserByIdAsync(string userId)
+        {
+            var user=await _userManager.FindByIdAsync(userId);
+
+            if(user is null) 
+            {
+                throw new NotFoundException($"User with Id: {userId} Not found");
+            }
+
+            var roles=await _userManager.GetRolesAsync(user);
+
+            return new UserDto 
+            { 
+                    Id= user.Id,
+                   FirstName= user.FirstName,
+                    LastName= user.LastName,
+                      Email= user.Email?? string.Empty,
+                         UserName= user.UserName,
+                            Role= roles.FirstOrDefault() ?? string.Empty,
+                            IsActive= user.IsActive,
+                                CreatedAt= user.CreatedAt
+            };
+           
+        }
+        #endregion
+
+
+
+
+        #region Role Management Method
+
+      
+        public async Task<string> AssignRoleAsync(string userId, string role)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            var currentRole = await _roleManager.RoleExistsAsync(role);
+
+            //check the user Id and role
+            if (user == null || !currentRole)
+               return "Invalid ID or Role";
+
+            //check if user is already assiged to selected role
+            if (await _userManager.IsInRoleAsync(user, role))
+                return "User already assigned to this role";
+
+            var result = await _userManager.AddToRoleAsync(user, role);
+
+            //check result
+            if (!result.Succeeded)
+                return "Something went wrong ";
+
+            return "Role assigned successfully";
+        }
+
+
+
+        #endregion
+
+
+       
+
+
+
+
+
+
+    }
+}

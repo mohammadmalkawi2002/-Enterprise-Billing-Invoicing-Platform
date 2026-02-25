@@ -1,17 +1,20 @@
-﻿using BillingInvoicingPlatform.Application.Service.Abstraction;
+﻿using BillingInvoicingPlatform.Application.Dto.Invoice;
 using BillingInvoicingPlatform.Application.Exceptions;
+using BillingInvoicingPlatform.Application.Service.Abstraction;
 using BillingInvoicingPlatform.Domain.Enums;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using BillingInvoicingPlatform.Application.Dto.Invoice;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace BillingInvoicingPlatform.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
@@ -27,6 +30,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpGet]
         [Route("")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant)+","+nameof(Roles.User))]
+
         public async Task<ActionResult<IEnumerable<InvoiceDtoPagination>>> GetAllInvoices([FromQuery] InvoiceQueryDto queryDto)
         {
             var pagedResult = await _invoiceService.GetAllInvoicesAsync(queryDto);
@@ -48,6 +53,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
+
         public async Task<ActionResult<InvoiceDto>> CreateInvoice([FromBody] CreateInvoiceDto dto)
         {
 
@@ -60,6 +67,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpPut]
         [Route("{invoiceId}")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
+
         public async Task<IActionResult> UpdateInvoice(int invoiceId, [FromBody] UpdateInvoiceDto dto)
         {
             await _invoiceService.UpdateAsync(invoiceId, dto);
@@ -70,6 +79,8 @@ namespace BillingInvoicingPlatform.API.Controllers
      
 
         [HttpPatch("{invoiceId}/status")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
+
         public async Task<ActionResult<InvoiceDto>> ChangeStatus(
            int invoiceId,
            [FromBody] ChangeStatusRequest request)
@@ -82,6 +93,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpGet]
         [Route("{invoiceId}/WithDetails")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant) + "," + nameof(Roles.User))]
+
         public async Task<ActionResult<InvoiceDto>> GetInvoiceWithDetails(int invoiceId)
         {
             var invoice = await _invoiceService.GetInvoiceWithDetailsAsync(invoiceId);
@@ -94,6 +107,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpDelete]
         [Route("{invoiceId}")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+
         public async Task<IActionResult> Delete(int invoiceId) 
         {
             await _invoiceService.DeleteInvoice(invoiceId);

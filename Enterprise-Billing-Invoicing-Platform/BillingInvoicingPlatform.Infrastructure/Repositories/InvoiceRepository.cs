@@ -1,12 +1,14 @@
 ﻿using BillingInvoicingPlatform.Application.Common.Pagination;
 using BillingInvoicingPlatform.Application.Dto.Invoice;
 using BillingInvoicingPlatform.Application.Dto.Payment;
+using BillingInvoicingPlatform.Application.Dto.Reports;
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Domain.Entities;
 using BillingInvoicingPlatform.Domain.Enums;
 using BillingInvoicingPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,8 +63,14 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                 var searchTerm = query.SearchBy.Trim().ToLower();
                 invoicesQuery = invoicesQuery.Where(i =>
                     i.InvoiceNumber.ToLower().Contains(searchTerm) ||
-                    i.Customer.Name.ToLower().Contains(searchTerm) ||
-                    i.Status.ToString().ToLower().Contains(searchTerm)
+                    i.Customer.Name.ToLower().Contains(searchTerm)
+
+                ///TODO:  I want to enable searching by status text (e.g., "Sent", "Paid") but I face a problem because the Status property is an enum and I cannot convert it to string in the LINQ query for filtering
+                //i.Status.ToString().ToLower().Contains(searchTerm)
+                //•	EF Core cannot translate Enum.ToString() to SQL because:SQL databases store enums as integers,EF Core doesn't know how to convert this to a SQL statement
+
+
+
                 );
             }
 
@@ -85,7 +93,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                     Status = i.Status.ToString(),
                     DueDate = i.DueDate,
                     TotalAmount = i.TotalAmount,
-                    // ✅ Calculate RemainingBalance in SQL (not in memory!)
+                    
                     RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount)
                 })
                 .ToListAsync();
@@ -140,19 +148,20 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                     SubTotal = i.SubTotal,
                     TaxAmount = i.TaxAmount,
                     TotalAmount = i.TotalAmount,
-                    
-                    // ✅ Calculate TotalPaid in SQL (not in memory!)
+
+                    //TODO:  in this point I Face a problem on updating the TotalPaid and RemainingBalance properties in the Invoice entity (so I need to ensure these are updated correctly)
+                    //  Calculate TotalPaid in SQL (not in memory!)
                     TotalPaid = i.Payments.Sum(p => p.PaymentAmount),
                     
-                    // ✅ Calculate RemainingBalance in SQL
+                    //  Calculate RemainingBalance in SQL
                     RemainingAmount = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount),
                     
-                    // ✅ Calculate DaysOverdue in SQL
+                    //  Calculate DaysOverdue in SQL
                     DaysOverdue = i.DueDate.HasValue && i.DueDate.Value.Date < DateTime.UtcNow.Date
                         ? EF.Functions.DateDiffDay(i.DueDate.Value.Date, DateTime.UtcNow.Date)
                         : 0,
 
-                    // ✅ Project Items directly (no separate query needed)
+                    //  Project Items directly (no separate query needed)
                     Items = i.Items.Select(item => new InvoiceItemDto
                     {
                         Id = item.Id,
@@ -163,7 +172,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
                         LineTotal = item.LineTotal
                     }).ToList(),
                     
-                    // ✅ Project Payments directly (no separate query needed)
+                    //  Project Payments directly (no separate query needed)
                     Payments = i.Payments.Select(payment => new PaymentDto
                     {
                         Id = payment.Id,
@@ -216,12 +225,7 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
             invoice.DeletedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
         }
-        public async Task<bool> InvoiceExistsAsync(int invoiceId)
-        {
-            return await _dbContext.Invoices
-                .AsNoTracking()
-                .AnyAsync(i => i.Id == invoiceId);
-        }
+        
 
 
 
@@ -256,9 +260,178 @@ namespace BillingInvoicingPlatform.Infrastructure.Repositories
         
     }
 
+        /// <summary>
+        /// Get outstanding receivables (unpaid/partially paid invoices) with filtering and sorting
+        /// </summary>
+        public async Task<List<OutstandingReceivableItemDto>> GetOutstandingReceivablesAsync(
+            OutstandingReceivablesQueryDto query)
+        {
+            var currentDate = DateTime.UtcNow.Date;
+
+            // Base query: Only invoices with outstanding balance
+            var invoicesQuery = _dbContext.Invoices
+                .AsNoTracking()
+                .Where(i => !i.IsDeleted &&
+                           (i.Status == InvoiceStatus.Sent ||
+                            i.Status == InvoiceStatus.PartiallyPaid ||
+                            i.Status == InvoiceStatus.Overdue))
+                            .AsQueryable();
+
+            // Filter by customer
+            if (query.CustomerId.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.CustomerId == query.CustomerId.Value);
+            }
+
+            // Filter by due date range
+            if (query.DueDateFrom.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.DueDate.HasValue && 
+                                                         i.DueDate.Value.Date >= query.DueDateFrom.Value.Date);
+            }
+
+            if (query.DueDateTo.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.DueDate.HasValue && 
+                                                         i.DueDate.Value.Date <= query.DueDateTo.Value.Date);
+            }
+
+            // Filter only overdue invoices
+            if (query.OnlyOverdue.HasValue && query.OnlyOverdue.Value)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.DueDate.HasValue && 
+                                                         i.DueDate.Value.Date < currentDate);
+            }
+
+            // Project to DTO with calculated fields
+            var itemsQuery = invoicesQuery.Select(i => new OutstandingReceivableItemDto
+            {
+                InvoiceId = i.Id,
+                InvoiceNumber = i.InvoiceNumber,
+                CustomerId = i.CustomerId,
+                CustomerName = i.Customer.Name,
+                CustomerEmail = i.Customer.Email,
+                IssueDate = i.IssueDate ?? default(DateTime),
+                DueDate = i.DueDate,
+                Status = i.Status.ToString(),
+                TotalAmount = i.TotalAmount,
+                TotalPaid = i.Payments.Sum(p => p.PaymentAmount),
+                RemainingBalance = i.TotalAmount - i.Payments.Sum(p => p.PaymentAmount),
+                DaysOverdue = i.DueDate.HasValue && i.DueDate.Value.Date < currentDate
+                    ? EF.Functions.DateDiffDay(i.DueDate.Value.Date, currentDate)
+                    : 0
+            });
+
+            // Filter by minimum amount (after projection)
+            if (query.MinimumAmount.HasValue && query.MinimumAmount.Value > 0)
+            {
+                itemsQuery = itemsQuery.Where(i => i.RemainingBalance >= query.MinimumAmount.Value);
+            }
+
+            // Apply sorting
+            itemsQuery = ApplyReceivablesSorting(itemsQuery, query.SortBy, query.SortDirection);
+
+            // Execute query
+            var items = await itemsQuery.ToListAsync();
+
+            return items;
+        }
+
+        private IQueryable<OutstandingReceivableItemDto> ApplyReceivablesSorting(
+            IQueryable<OutstandingReceivableItemDto> query,
+            string? sortBy,
+            string? sortDirection)
+        {
+            var isDescending = sortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true;
+
+            return (sortBy?.ToLower()) switch
+            {
+                "duedate" => isDescending
+                    ? query.OrderByDescending(i => i.DueDate)
+                    : query.OrderBy(i => i.DueDate),
+
+                "remainingbalance" => isDescending
+                    ? query.OrderByDescending(i => i.RemainingBalance)
+                    : query.OrderBy(i => i.RemainingBalance),
+
+                "daysoverdue" => isDescending
+                    ? query.OrderByDescending(i => i.DaysOverdue)
+                    : query.OrderBy(i => i.DaysOverdue),
+
+                "customername" => isDescending
+                    ? query.OrderByDescending(i => i.CustomerName)
+                    : query.OrderBy(i => i.CustomerName),
+
+                "customeremail" => isDescending
+                    ? query.OrderByDescending(i => i.CustomerEmail)
+                    : query.OrderBy(i => i.CustomerEmail),
+
+                // Default: Sort by DueDate ascending (oldest first)
+                _ => query.OrderBy(i => i.DueDate)
+            };
+        }
+
+
+       
         public async Task SaveChangesAsync()
         {
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<List<InvoiceDto>> GetRevenueDataAsync(RevenueSummaryQueryDto query)
+        {
+            var invoicesQuery = _dbContext.Invoices
+                .AsNoTracking()
+                .Where(i=> !i.IsDeleted &&
+                            i.Status==InvoiceStatus.Sent||
+                            i.Status==InvoiceStatus.PartiallyPaid||
+                            i.Status==InvoiceStatus.Paid||
+                            i.Status==InvoiceStatus.Overdue
+                          ).AsQueryable();
+
+            //Filter by IssueDate range:
+            if(query.StartDate.HasValue)
+            {
+                invoicesQuery=invoicesQuery.Where(i => i.IssueDate.HasValue && 
+                                                         i.IssueDate.Value.Date >= query.StartDate.Value.Date);
+            }
+
+            if(query.EndDate.HasValue)
+            {
+                invoicesQuery=invoicesQuery.Where(i => i.IssueDate.HasValue && 
+                                                         i.IssueDate.Value.Date <= query.EndDate.Value.Date);
+            }
+
+
+            //Filter by CustomerId:
+            if (query.CustomerId.HasValue) 
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.CustomerId == query.CustomerId.Value);
+            }
+
+
+            return await invoicesQuery.Select(i => new InvoiceDto
+            {
+                InvoiceNumber = i.InvoiceNumber,
+                CustomerId = i.CustomerId,
+                CustomerName = i.Customer.Name,
+                CustomerEmail = i.Customer.Email,
+                IssueDate = i.IssueDate ?? default(DateTime),
+                DueDate = i.DueDate,
+                CreatedAt = i.CreatedAt ?? default(DateTime),
+                Status = i.Status.ToString(),
+                SubTotal = i.SubTotal,
+                TaxAmount = i.TaxAmount,
+                TotalAmount = i.TotalAmount,
+         
+                TotalPaid = i.Payments.Sum(p => p.PaymentAmount),
+               
+      
+                DaysOverdue = i.DueDate.HasValue && i.DueDate.Value.Date < DateTime.UtcNow.Date
+                    ? EF.Functions.DateDiffDay(i.DueDate.Value.Date, DateTime.UtcNow.Date)
+                    : 0,
+                
+            }).ToListAsync();
         }
     }
 }
