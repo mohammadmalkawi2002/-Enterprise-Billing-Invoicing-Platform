@@ -20,7 +20,7 @@ namespace BillingInvoicingPlatform.Application.Mapping
 
             //Mapping From Entity To Dto:
             CreateMap<Customer, CustomerDto>()
-                .ForMember(dest => dest.InvoiceCount, opt => opt.MapFrom(src => src.Invoices.Count))
+                .ForMember(dest => dest.InvoiceCount, opt => opt.MapFrom(src => src.InvoiceCount))
              .ForMember(dest => dest.Status,
                opt => opt.MapFrom(src => src.Status.ToString()));
             // Address mapping

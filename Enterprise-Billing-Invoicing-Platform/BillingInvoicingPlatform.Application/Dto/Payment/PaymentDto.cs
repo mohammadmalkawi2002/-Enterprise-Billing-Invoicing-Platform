@@ -21,8 +21,8 @@ namespace BillingInvoicingPlatform.Application.Dto.Payment
     public class PaymentDto
     {
         public int Id { get; set; }
-        public string InvoiceNumber { get; set; }
-        public string CustomerName { get; set; }
+        public string? InvoiceNumber { get; set; }
+        public string? CustomerName { get; set; }
         public decimal PaymentAmount { get; set; }
         public DateTime PaymentDate { get; set; }
         public string? PaymentMethod { get; set; }

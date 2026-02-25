@@ -1,16 +1,21 @@
 ﻿using BillingInvoicingPlatform.Application.Dto.Customer;
 using BillingInvoicingPlatform.Application.Service;
 using BillingInvoicingPlatform.Application.Service.Abstraction;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Text.Json;
 
 namespace BillingInvoicingPlatform.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] //Requires authentication for all actions in this controller
+    [EnableRateLimiting("Fixed")]
     public class CustomersController : ControllerBase
     {
         private readonly ICustomerService _customerService;
@@ -24,6 +29,7 @@ namespace BillingInvoicingPlatform.API.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant)+"," + nameof(Roles.User))]
         public async Task<ActionResult<List<CustomerDto>>> GetAll([FromQuery] CustomerQueryDto queryDto) 
         {
             
@@ -48,6 +54,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
 
         [HttpGet("{id}")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant) + "," + nameof(Roles.User))]
+
         public async Task<ActionResult<CustomerDto>> GetById(int id)
         {
             var customer = await _customerService.GetCustomerById(id);
@@ -57,6 +65,8 @@ namespace BillingInvoicingPlatform.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
+
         public async Task<ActionResult<CustomerDto>> Create(CreateCustomerDto customerDto)
         {
            
@@ -67,6 +77,7 @@ namespace BillingInvoicingPlatform.API.Controllers
 
 
         [HttpPut("{id}")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
 
         public async Task<ActionResult> Update(int id, UpdateCustomerDto dto) 
         {
@@ -82,6 +93,8 @@ namespace BillingInvoicingPlatform.API.Controllers
 
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+
         public async Task<ActionResult> Delete(int id)
         {
           

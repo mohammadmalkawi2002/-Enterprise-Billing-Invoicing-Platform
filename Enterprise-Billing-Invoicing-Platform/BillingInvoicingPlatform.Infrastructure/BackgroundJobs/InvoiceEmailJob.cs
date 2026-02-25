@@ -91,7 +91,7 @@ namespace BillingInvoicingPlatform.Infrastructure.BackgroundJobs
                      invoiceId,
                      ex.Message
                  );
-                throw; // Hangfire will automatically retry
+                throw; 
             }
         }
     }

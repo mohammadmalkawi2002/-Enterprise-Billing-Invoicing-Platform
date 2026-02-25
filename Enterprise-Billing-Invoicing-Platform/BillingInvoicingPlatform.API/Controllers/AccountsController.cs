@@ -1,0 +1,111 @@
+﻿using BillingInvoicingPlatform.Application.Dto.Account;
+using BillingInvoicingPlatform.Application.Interfaces;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BillingInvoicingPlatform.API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AccountsController : ControllerBase
+    {
+        private readonly IAuthService _authService;
+
+        public AccountsController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+
+        [HttpPost("register")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto) 
+        { 
+        
+            var result=await _authService.RegisterAsync(dto);
+
+            if (!result.IsAuthenticated)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+
+        }
+
+
+
+        [HttpPost("login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Login([FromBody] LoginDto dto) 
+        {
+            var result=await _authService.LoginAsync(dto);
+            if (!result.IsAuthenticated)
+            {
+                return Unauthorized(result);
+            }
+
+            return Ok(result);
+
+        }
+
+        [HttpGet("users")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var users = await _authService.GetAllUsersAsync();
+            return Ok(users);
+        }
+
+
+
+        [HttpGet("users/{userId}")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+        public async Task<IActionResult> GetUserById(string userId)
+        {
+            var user = await _authService.GetUserByIdAsync(userId);
+
+            if (user == null)
+                return NotFound(new { Message = "User not found" });
+
+            return Ok(user);
+        }
+
+
+
+
+        [HttpPut("users/{userId}/role")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+        public async Task<IActionResult> AssignRole(string userId, [FromBody] string role)
+        {
+            var result = await _authService.AssignRoleAsync(userId, role);
+
+
+            return Ok(new { Message = "Role assigned successfully" });
+        }
+
+
+
+
+        [HttpDelete("users/{userId}")]
+        [Authorize(Roles = nameof(Roles.Admin))]
+        public async Task<IActionResult> DeleteUser(string userId)
+        {
+            var result = await _authService.DeleteUserAsync(userId);
+
+            if (!result)
+                return NotFound(new { Message = "User not found" });
+
+            return Ok(new { Message = "User deleted successfully" });
+        }
+
+
+
+        
+    }
+
+
+}
+

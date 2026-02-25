@@ -1,5 +1,6 @@
 ﻿using BillingInvoicingPlatform.Application.Common.Pagination;
 using BillingInvoicingPlatform.Application.Dto.Invoice;
+using BillingInvoicingPlatform.Application.Dto.Reports;
 using BillingInvoicingPlatform.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -20,14 +21,18 @@ namespace BillingInvoicingPlatform.Application.Interfaces
         Task<InvoiceDto?> GetInvoiceDetailsAsync(int invoiceId);
         Task<Invoice?> GetByIdAsync(int id);
         Task<List<Invoice>> GetOverdueInvoicesAsync();
-        Task<bool> InvoiceExistsAsync(int invoiceId);
+        Task<List<OutstandingReceivableItemDto>> GetOutstandingReceivablesAsync(OutstandingReceivablesQueryDto query);
+        Task <List<InvoiceDto>> GetRevenueDataAsync(RevenueSummaryQueryDto query);
+
+        /// <summary>
+        /// Returns invoices (including Customer navigation) that are due in `days` days
+        /// and are in statuses that require reminders (e.g., Sent, PartiallyPaid).
+        /// </summary>
+  
 
         Task SaveChangesAsync();
 
-       // later added:
-        //    Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber);
-        //Task<List<Invoice>> GetByCustomerIdAsync(int customerId);
-        //Task<List<Invoice>> GetOverdueInvoicesAsync();
+       
 
 
 

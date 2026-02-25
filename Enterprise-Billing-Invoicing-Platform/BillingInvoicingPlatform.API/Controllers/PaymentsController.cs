@@ -1,5 +1,7 @@
 ﻿using BillingInvoicingPlatform.Application.Dto.Payment;
 using BillingInvoicingPlatform.Application.Service.Abstraction;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +9,7 @@ namespace BillingInvoicingPlatform.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentsController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
@@ -18,6 +21,7 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpGet]
         [Route("{paymentId:int}")]
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant) + "," + nameof(Roles.User))]
         public async Task<ActionResult<PaymentDto>> GetById(int paymentId)
         {
          var payment=await _paymentService.GetPaymentById(paymentId);
@@ -25,7 +29,9 @@ namespace BillingInvoicingPlatform.API.Controllers
         }
 
         [HttpPost]
-        public  async Task<ActionResult<PaymentDto>> Create([FromBody] CreatePaymentDto dto) 
+        [Authorize(Roles = nameof(Roles.Admin) + "," + nameof(Roles.Accountant))]
+
+        public async Task<ActionResult<PaymentDto>> Create([FromBody] CreatePaymentDto dto) 
         { 
                 
             var payment= await _paymentService.RecordPayment(dto);
@@ -36,6 +42,7 @@ namespace BillingInvoicingPlatform.API.Controllers
 
         [HttpDelete]
         [Route("{paymentId:int}")]
+        [Authorize(Roles = nameof(Roles.Admin))]
 
         public async Task<IActionResult> Delete(int paymentId) 
         {

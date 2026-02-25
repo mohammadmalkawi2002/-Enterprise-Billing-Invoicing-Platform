@@ -1,4 +1,5 @@
 using BillingInvoicingPlatform.API.CustomMiddleware;
+using BillingInvoicingPlatform.API.HangfireFilter;
 using BillingInvoicingPlatform.Application.Interfaces;
 using BillingInvoicingPlatform.Application.Mapping;
 using BillingInvoicingPlatform.Application.Service;
@@ -9,18 +10,44 @@ using BillingInvoicingPlatform.Infrastructure.Configuration;
 using BillingInvoicingPlatform.Infrastructure.Data;
 using BillingInvoicingPlatform.Infrastructure.Data.Seed;
 using BillingInvoicingPlatform.Infrastructure.ExternalService;
+using BillingInvoicingPlatform.Infrastructure.Identity.Configuration;
+using BillingInvoicingPlatform.Infrastructure.Identity.Models;
+using BillingInvoicingPlatform.Infrastructure.Identity.Seed;
+using BillingInvoicingPlatform.Infrastructure.Identity.Service;
 using BillingInvoicingPlatform.Infrastructure.Repositories;
 using BillingInvoicingPlatform.Infrastructure.UnitOfWork;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Hangfire;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Experimental;
+using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Threading.RateLimiting;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add Rate Limiting Services:
+builder.Services.AddRateLimiter(options => 
+{ 
+ options.AddFixedWindowLimiter("Fixed", limiterOptions =>
+ {
+     limiterOptions.Window = TimeSpan.FromMinutes(1); // Per 1 minute
+     limiterOptions.PermitLimit = 10; // Max 10 requests
+     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+     limiterOptions.QueueLimit = 10; // Max 10 queued requests
+ });
+    options.RejectionStatusCode= StatusCodes.Status429TooManyRequests;
+    
+
+});
 
 
 //Add Hangfire Service:
@@ -69,15 +96,110 @@ builder.Services.AddScoped<IInvoiceEmailJob, InvoiceEmailJob>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IInvoiceService,InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 builder.Services.AddScoped<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<IInvoiceOverdueService, InvoiceOverdueService>();
 
 
+
+//========Register Auth Services=========:
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+//Add Identity Services:
+
+builder.Services.Configure<Jwt>(builder.Configuration.GetSection("JWT"));
+
+var jwtSettings = builder.Configuration.GetSection("JWT").Get<Jwt>();
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Password settings
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 6;
+    
+    // Sign-in settings:
+   // options.SignIn.RequireConfirmedEmail = true; // Require email confirmation for sign-in
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
+})
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+//Add Jwt Authentication Services:
+
+builder.Services.AddAuthentication(options => 
+{ 
+    options.DefaultAuthenticateScheme= JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme= JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options=> {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters 
+    { 
+         ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience=true,
+        ValidAudience=jwtSettings.Audience,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+
+        // Removes the default 5-minute clock skew tolerance.
+        // Ensures the JWT token expires exactly at the specified expiration time for higher security.
+
+        ClockSkew = TimeSpan.Zero
+    };   
+
+});
+
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Billing & Invoicing Platform API",
+        Version = "v1",
+        Description = "Enterprise Billing and Invoicing Platform API with JWT Authentication"
+    });
+
+    // Add JWT Authentication to Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your token.\n\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -86,10 +208,20 @@ var app = builder.Build();
 //using (var scope = app.Services.CreateScope())
 //{
 //    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-//    // Optional: apply migrations automatically
-//    //  dbContext.Database.Migrate();
+
 
 //    await CustomerSeeder.SeedAsync(dbContext);
+   
+//}
+
+//// ===== Seed Roles and Default Users =====
+//using (var scope = app.Services.CreateScope())
+//{
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+//    await RoleSeeder.SeedRolesAsync(roleManager);
+//    await RoleSeeder.SeedAdminUserAsync(userManager);
 //}
 
 
@@ -103,14 +235,24 @@ if (app.Environment.IsDevelopment())
 
 //Use Custom Exception Middleware:
 app.UseMiddleware<ExceptionMiddleWare>();
-
 app.UseHttpsRedirection();
 
+
+// ===== IMPORTANT: Authentication must come before Authorization =====
+app.UseAuthentication();
 app.UseAuthorization();
 
-//Enable Dashboard of Hangfire:
-app.UseHangfireDashboard("/hangfireDashboard");
-//Jobs:
+// Use Rate Limiting Middleware:
+app.UseRateLimiter();
+
+// ===== Hangfire Dashboard (with authorization) =====
+app.UseHangfireDashboard("/hangfireDashboard", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
+
+// ===== Configure Recurring Jobs =====
 
 RecurringJob.AddOrUpdate<InvoiceOverdueJob>
     (
@@ -118,6 +260,6 @@ RecurringJob.AddOrUpdate<InvoiceOverdueJob>
      job => job.ExecuteJobAsync()
      , Cron.Daily()
      );
-app.MapControllers();
 
+app.MapControllers();
 app.Run();
